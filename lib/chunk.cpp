@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "data/generic.h"
+#include "data/mxhd.h"
 #include "data/mxst.h"
 #include "data/riff.h"
 
@@ -140,6 +141,10 @@ Data *Chunk::CreateDataFromID(u32 id)
     return new RIFFData();
   case MxSt:
     return new MxStData();
+  case MxHd:
+    return new ::MxHd();
+  case pad_:
+    return new GenericData();
   }
 
   return new GenericData();
@@ -154,6 +159,10 @@ const char *Chunk::GetTypeDescription(Type type)
     return "List of sub-elements";
   case MxSt:
     return "MxStreamer";
+  case MxHd:
+    return "Interleaf Header";
+  case pad_:
+    return "Padding";
   }
 
   return "Unknown";

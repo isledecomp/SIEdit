@@ -14,7 +14,9 @@ public:
   {
     RIFF = 0x46464952,
     LIST = 0x5453494c,
-    MxSt = 0x7453784d
+    MxSt = 0x7453784d,
+    MxHd = 0x6448784d,
+    pad_ = 0x20646170
   };
 
   Chunk();
@@ -39,6 +41,7 @@ public:
 
   Type type() const { return static_cast<Type>(id_); }
   const u32 &id() const { return id_; }
+  Data *data() const { return data_; }
 
   static Data *CreateDataFromID(u32 id);
 
