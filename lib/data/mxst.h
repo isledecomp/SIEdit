@@ -1,15 +1,20 @@
 #ifndef MXSTDATA_H
 #define MXSTDATA_H
 
-#include "data.h"
+#include "types.h"
 
-class MxStData : public Data
+namespace si {
+
+/**
+ * @brief Stream
+ *
+ * Appears to encapsulate any streamable object in an Interleaf file.
+ */
+struct MxSt
 {
-public:
-  MxStData();
-
-  virtual void Read(std::ifstream &f, u32 sz);
 
 };
+
+}
 
 #endif // MXSTDATA_H

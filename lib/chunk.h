@@ -4,19 +4,24 @@
 #include <fstream>
 #include <memory>
 
-#include "data/data.h"
+#include "bytearray.h"
 #include "types.h"
+
+namespace si {
 
 class Chunk
 {
 public:
   enum Type
   {
-    RIFF = 0x46464952,
-    LIST = 0x5453494c,
-    MxSt = 0x7453784d,
-    MxHd = 0x6448784d,
-    pad_ = 0x20646170
+    TYPE_RIFF = 0x46464952,
+    TYPE_LIST = 0x5453494c,
+    TYPE_MxSt = 0x7453784d,
+    TYPE_MxHd = 0x6448784d,
+    TYPE_MxCh = 0x6843784d,
+    TYPE_MxOf = 0x664f784d,
+    TYPE_MxOb = 0x624f784d,
+    TYPE_pad_ = 0x20646170
   };
 
   Chunk();
@@ -24,7 +29,6 @@ public:
 
   bool Read(const std::string &f);
   bool Read(const char *f);
-  bool Read(std::ifstream &f);
   void Clear();
 
   typedef std::vector<Chunk*> Children;
@@ -41,9 +45,9 @@ public:
 
   Type type() const { return static_cast<Type>(id_); }
   const u32 &id() const { return id_; }
-  Data *data() const { return data_; }
-
-  static Data *CreateDataFromID(u32 id);
+  const u32 &offset() const { return offset_; }
+  bytearray &data() { return data_; }
+  bytearray &exdata() { return exdata_; }
 
   static const char *GetTypeDescription(Type type);
   const char *GetTypeDescription() const
@@ -56,12 +60,18 @@ private:
   Chunk(const Chunk& other);
   Chunk& operator=(const Chunk& other);
 
+  bool Read(std::ifstream &f, u32 &version, u32 &alignment);
+
   u32 id_;
-  Data *data_;
+  u32 offset_;
+  bytearray data_;
+  bytearray exdata_;
 
   Chunk *parent_;
   Children children_;
 
 };
+
+}
 
 #endif // CHUNK_H

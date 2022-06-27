@@ -1,7 +1,9 @@
 #ifndef MXHDDATA_H
 #define MXHDDATA_H
 
-#include "data.h"
+#include "types.h"
+
+namespace si {
 
 /**
  * @brief The main header section of an Interleaf file.
@@ -10,13 +12,8 @@
  * about the file as a whole, including version information and settings for how the file should
  * be streamed.
  */
-class MxHd : public Data
+struct MxHd
 {
-public:
-  MxHd();
-
-  virtual void Read(std::ifstream &f, u32 sz);
-
   /**
    * @brief The version of this Interleaf file.
    *
@@ -50,7 +47,8 @@ public:
    * on version 1.0 SI files.
    */
   u32 dwBufferCount;
-
 };
+
+}
 
 #endif // MXHDDATA_H

@@ -5,6 +5,8 @@
 
 #define super QAbstractItemModel
 
+using namespace si;
+
 ChunkModel::ChunkModel(QObject *parent) :
   super{parent},
   chunk_(nullptr)
@@ -71,6 +73,8 @@ QVariant ChunkModel::data(const QModelIndex &index, int role) const
     case kColType:
       // Convert 4-byte ID to QString
       return QString::fromLatin1(reinterpret_cast<const char *>(&c->id()), sizeof(u32));
+    case kColOffset:
+      return QStringLiteral("0x%1").arg(QString::number(c->offset(), 16).toUpper());
     case kColDesc:
       return QString::fromUtf8(c->GetTypeDescription());
     }
@@ -87,6 +91,8 @@ QVariant ChunkModel::headerData(int section, Qt::Orientation orientation, int ro
     switch (section) {
     case kColType:
       return tr("Type");
+    case kColOffset:
+      return tr("Offset");
     case kColDesc:
       return tr("Description");
     }
@@ -95,14 +101,14 @@ QVariant ChunkModel::headerData(int section, Qt::Orientation orientation, int ro
   return super::headerData(section, orientation, role);
 }
 
-void ChunkModel::SetChunk(Chunk *c)
+void ChunkModel::SetChunk(si::Chunk *c)
 {
   beginResetModel();
   chunk_ = c;
   endResetModel();
 }
 
-Chunk *ChunkModel::GetChunkFromIndex(const QModelIndex &index) const
+si::Chunk *ChunkModel::GetChunkFromIndex(const QModelIndex &index) const
 {
   if (!index.isValid()) {
     return chunk_;

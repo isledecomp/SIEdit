@@ -1,21 +1,29 @@
 #include "panel.h"
 
-Panel::Panel(QWidget *parent)
-  : QWidget{parent},
-    data_(nullptr)
+Panel::Panel(QWidget *parent) :
+  QWidget{parent},
+  chunk_(nullptr)
 {
+  outer_layout_ = new QVBoxLayout(this);
 
+  layout_ = new QGridLayout();
+  outer_layout_->addLayout(layout_);
 }
 
-void Panel::SetData(Data *data)
+void Panel::SetData(si::Chunk *chunk)
 {
-  if (data_) {
-    OnClosingData(data_);
+  if (chunk_) {
+    OnClosingData(chunk_);
   }
 
-  data_ = data;
+  chunk_ = chunk;
 
-  if (data_) {
-    OnOpeningData(data_);
+  if (chunk_) {
+    OnOpeningData(chunk_);
   }
+}
+
+void Panel::FinishLayout()
+{
+  outer_layout_->addStretch();
 }

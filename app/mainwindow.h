@@ -6,7 +6,11 @@
 #include <QStackedWidget>
 
 #include "chunkmodel.h"
+#include "panels/mxch.h"
 #include "panels/mxhd.h"
+#include "panels/mxob.h"
+#include "panels/mxof.h"
+#include "panels/riff.h"
 #include "panels/panel.h"
 
 class MainWindow : public QMainWindow
@@ -15,6 +19,8 @@ class MainWindow : public QMainWindow
 public:
   explicit MainWindow(QWidget *parent = nullptr);
 
+  void OpenFilename(const QString &s);
+
 signals:
 
 private:
@@ -22,17 +28,21 @@ private:
 
   void InitializeMenuBar();
 
-  void SetPanel(Panel *panel, Data *data);
+  void SetPanel(Panel *panel, si::Chunk *chunk);
 
   ChunkModel model_;
-  Chunk chunk_;
+  si::Chunk chunk_;
 
   QStackedWidget *config_stack_;
 
   Panel *panel_blank_;
+  RIFFPanel *panel_riff_;
   MxHdPanel *panel_mxhd_;
+  MxChPanel *panel_mxch_;
+  MxOfPanel *panel_mxof_;
+  MxObPanel *panel_mxob_;
 
-  Data *last_set_data_;
+  si::Chunk *last_set_data_;
 
 private slots:
   void OpenFile();

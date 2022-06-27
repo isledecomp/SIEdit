@@ -10,6 +10,7 @@ public:
   enum Columns
   {
     kColType,
+    kColOffset,
     kColDesc,
 
     kColCount
@@ -24,12 +25,12 @@ public:
   virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
   virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
-  void SetChunk(Chunk *c);
+  void SetChunk(si::Chunk *c);
 
 private:
-  Chunk *GetChunkFromIndex(const QModelIndex &index) const;
+  si::Chunk *GetChunkFromIndex(const QModelIndex &index) const;
 
-  Chunk *chunk_;
+  si::Chunk *chunk_;
 
 };
 

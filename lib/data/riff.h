@@ -1,17 +1,21 @@
-#ifndef RIFFDATA_H
-#define RIFFDATA_H
+#ifndef RIFF_H
+#define RIFF_H
 
-#include "chunk.h"
+#include "types.h"
 
-class RIFFData : public Data
+namespace si {
+
+struct RIFF
 {
-public:
-  RIFFData();
-
-  virtual void Read(std::ifstream &f, u32 sz);
-
-  u32 id;
-
+  u32 dwID;
 };
+
+struct LIST
+{
+  u32 dwID;
+  u32 dwCount;
+};
+
+}
 
 #endif // RIFFDATA_H

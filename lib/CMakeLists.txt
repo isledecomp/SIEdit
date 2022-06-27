@@ -2,23 +2,20 @@ option(LIBWEAVER_BUILD_DOXYGEN "Build Doxygen documentation" OFF)
 
 set(LIBWEAVER_SOURCES
   # Data types
-  data/data.cpp
-  data/data.h
-  data/generic.cpp
-  data/generic.h
-  data/mxhd.cpp
+  data/mxch.h
   data/mxhd.h
-  data/mxst.cpp
+  data/mxob.cpp
+  data/mxob.h
+  data/mxof.h
   data/mxst.h
-  data/riff.cpp
   data/riff.h
 
-  # Chunk
+  # Main library
+  bytearray.cpp
+  bytearray.h
   chunk.cpp
   chunk.h
-
-  # Common
-  libweaver_global.h
+  common.h
   types.h
 )
 

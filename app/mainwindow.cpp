@@ -6,6 +6,8 @@
 #include <QSplitter>
 #include <QTreeWidget>
 
+using namespace si;
+
 MainWindow::MainWindow(QWidget *parent) :
   QMainWindow{parent},
   last_set_data_(nullptr)
@@ -30,9 +32,29 @@ MainWindow::MainWindow(QWidget *parent) :
   panel_mxhd_ = new MxHdPanel();
   config_stack_->addWidget(panel_mxhd_);
 
+  panel_riff_ = new RIFFPanel();
+  config_stack_->addWidget(panel_riff_);
+
+  panel_mxch_ = new MxChPanel();
+  config_stack_->addWidget(panel_mxch_);
+
+  panel_mxof_ = new MxOfPanel();
+  config_stack_->addWidget(panel_mxof_);
+
+  panel_mxob_ = new MxObPanel();
+  config_stack_->addWidget(panel_mxob_);
+
   InitializeMenuBar();
 
   splitter->setSizes({99999, 99999});
+}
+
+void MainWindow::OpenFilename(const QString &s)
+{
+  model_.SetChunk(nullptr);
+  SetPanel(panel_blank_, nullptr);
+  chunk_.Read(s.toStdString());
+  model_.SetChunk(&chunk_);
 }
 
 void MainWindow::InitializeMenuBar()
@@ -54,48 +76,54 @@ void MainWindow::InitializeMenuBar()
   setMenuBar(menubar);
 }
 
-void MainWindow::SetPanel(Panel *panel, Data *data)
+void MainWindow::SetPanel(Panel *panel, si::Chunk *chunk)
 {
   auto current = static_cast<Panel*>(config_stack_->currentWidget());
   current->SetData(nullptr);
 
   config_stack_->setCurrentWidget(panel);
-  panel->SetData(data);
-  last_set_data_ = data;
+  panel->SetData(chunk);
+  last_set_data_ = chunk;
 }
 
 void MainWindow::OpenFile()
 {
   QString s = QFileDialog::getOpenFileName(this, QString(), QString(), tr("Interleaf Files (*.si)"));
   if (!s.isEmpty()) {
-    model_.SetChunk(nullptr);
-    SetPanel(panel_blank_, nullptr);
-    chunk_.Read(s.toStdString());
-    model_.SetChunk(&chunk_);
+    OpenFilename(s);
   }
 }
 
 void MainWindow::SelectionChanged(const QModelIndex &index)
 {
-  Panel *panel_to_set = panel_blank_;
-  Data *data = nullptr;
+  Panel *p = panel_blank_;
+  Chunk *c = static_cast<Chunk*>(index.internalPointer());
 
-  if (Chunk *c = static_cast<Chunk*>(index.internalPointer())) {
-    data = c->data();
-
+  if (c) {
     switch (c->type()) {
-    case Chunk::MxHd:
-      panel_to_set = panel_mxhd_;
+    case Chunk::TYPE_MxHd:
+      p = panel_mxhd_;
       break;
-    case Chunk::RIFF:
-    case Chunk::LIST:
-    case Chunk::MxSt:
-    case Chunk::pad_:
+    case Chunk::TYPE_RIFF:
+    case Chunk::TYPE_LIST:
+      p = panel_riff_;
+      break;
+    case Chunk::TYPE_MxCh:
+      p = panel_mxch_;
+      break;
+    case Chunk::TYPE_MxOf:
+      p = panel_mxof_;
+      break;
+    case Chunk::TYPE_MxOb:
+      p = panel_mxob_;
+      break;
+    case Chunk::TYPE_MxSt:
+    case Chunk::TYPE_pad_:
       break;
     }
   }
 
-  if (panel_to_set != config_stack_->currentWidget() || data != last_set_data_) {
-    SetPanel(panel_to_set, data);
+  if (p != config_stack_->currentWidget() || c != last_set_data_) {
+    SetPanel(p, c);
   }
 }
