@@ -45,7 +45,7 @@ QModelIndex ChunkModel::parent(const QModelIndex &index) const
   }
 
   size_t row = grandparent->IndexOfChild(parent);
-  return createIndex(row, index.column(), parent);
+  return createIndex(row, 0, parent);
 }
 
 int ChunkModel::rowCount(const QModelIndex &parent) const
