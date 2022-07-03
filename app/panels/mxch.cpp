@@ -1,6 +1,5 @@
 #include "mxch.h"
 
-#include <data/mxch.h>
 #include <QFontDatabase>
 #include <QGroupBox>
 #include <QLabel>
@@ -83,34 +82,31 @@ MxChPanel::MxChPanel(QWidget *parent) :
 
 void MxChPanel::OnOpeningData(Chunk *chunk)
 {
-  MxCh *mxch = chunk->data().cast<MxCh>();
-
-  flag_edit_->setText(QString::number(mxch->wFlags, 16));
-  obj_edit_->setValue(mxch->dwObjectParent);
-  ms_offset_edit_->setValue(mxch->dwMillisecondOffset);
-  data_sz_edit_->setValue(mxch->dwDataSize);
+  flag_edit_->setText(QString::number(chunk->data("Flags"), 16));
+  obj_edit_->setValue(chunk->data("Object"));
+  ms_offset_edit_->setValue(chunk->data("Time"));
+  data_sz_edit_->setValue(chunk->data("DataSize"));
 
   for (QCheckBox *cb : qAsConst(flag_checkboxes_)) {
-    cb->setChecked(cb->property("flag").toUInt() & mxch->wFlags);
+    cb->setChecked(cb->property("flag").toUInt() & chunk->data("Flags"));
   }
 
-  QByteArray ba((const char*) chunk->exdata().data(), chunk->exdata().size());
+  const Data &data = chunk->data("Data");
+  QByteArray ba(data.data(), data.size());
   data_edit_->setPlainText(ba.toHex());
 }
 
 void MxChPanel::OnClosingData(Chunk *chunk)
 {
-  MxCh *mxch = chunk->data().cast<MxCh>();
-
   bool ok;
   u16 flags = flag_edit_->text().toUShort(&ok, 16);
   if (ok) {
-    mxch->wFlags = flags;
+    chunk->data("Flags") = flags;
   }
 
-  mxch->dwObjectParent = obj_edit_->value();
-  mxch->dwMillisecondOffset = ms_offset_edit_->value();
-  mxch->dwDataSize = data_sz_edit_->value();
+  chunk->data("Object") = u32(obj_edit_->value());
+  chunk->data("Time") = u32(ms_offset_edit_->value());
+  chunk->data("DataSize") = u32(data_sz_edit_->value());
 }
 
 void MxChPanel::FlagCheckBoxClicked(bool e)

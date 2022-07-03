@@ -1,6 +1,5 @@
 #include "mxof.h"
 
-#include <data/mxof.h>
 #include <QLabel>
 
 using namespace si;
@@ -27,13 +26,13 @@ MxOfPanel::MxOfPanel(QWidget *parent) :
 
 void MxOfPanel::OnOpeningData(si::Chunk *chunk)
 {
-  u32 *offsets = reinterpret_cast<u32*>(chunk->exdata().data());
-  size_t count = chunk->exdata().size() / sizeof(u32);
+  const Data &offsets_bytes = chunk->data("Offsets");
+  const u32 *offsets = reinterpret_cast<const u32*>(offsets_bytes.data());
+  size_t offset_count = offsets_bytes.size() / sizeof(u32);
 
-  MxOf *mxof = chunk->data().cast<MxOf>();
-  obj_count_edit_->setValue(mxof->dwObjectCount);
+  obj_count_edit_->setValue(chunk->data("Count"));
 
-  for (size_t i=0; i<count; i++) {
+  for (size_t i=0; i<offset_count; i++) {
     QString addr = QStringLiteral("0x%1").arg(offsets[i], 8, 16, QChar('0'));
 
     list_->addItem(QStringLiteral("%1: %2").arg(QString::number(i), addr));

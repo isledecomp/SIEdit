@@ -2,9 +2,10 @@
 #define CHUNK_H
 
 #include <fstream>
+#include <map>
 #include <memory>
 
-#include "bytearray.h"
+#include "common.h"
 #include "types.h"
 
 namespace si {
@@ -24,33 +25,34 @@ public:
     TYPE_pad_ = 0x20646170
   };
 
-  Chunk();
-  virtual ~Chunk();
+  LIBWEAVER_EXPORT Chunk();
+  virtual LIBWEAVER_EXPORT ~Chunk();
 
-  bool Read(const std::string &f);
-  bool Read(const char *f);
-  void Clear();
+  LIBWEAVER_EXPORT bool Read(const std::string &f);
+  LIBWEAVER_EXPORT bool Read(const char *f);
+  LIBWEAVER_EXPORT void Clear();
 
   typedef std::vector<Chunk*> Children;
 
-  Chunk *GetParent() const { return parent_; }
-  const Children &GetChildren() const { return children_; }
-  void AppendChild(Chunk *chunk);
-  bool RemoveChild(Chunk *chunk);
-  size_t IndexOfChild(Chunk *chunk);
-  void InsertChild(size_t index, Chunk *chunk);
-  Chunk *RemoveChild(size_t index);
-  Chunk *GetChildAt(size_t index) const { return children_.at(index); }
-  size_t GetChildCount() const { return children_.size(); }
+  LIBWEAVER_EXPORT Chunk *GetParent() const { return parent_; }
+  LIBWEAVER_EXPORT const Children &GetChildren() const { return children_; }
+  LIBWEAVER_EXPORT void AppendChild(Chunk *chunk);
+  LIBWEAVER_EXPORT bool RemoveChild(Chunk *chunk);
+  LIBWEAVER_EXPORT size_t IndexOfChild(Chunk *chunk);
+  LIBWEAVER_EXPORT void InsertChild(size_t index, Chunk *chunk);
+  LIBWEAVER_EXPORT Chunk *RemoveChild(size_t index);
+  LIBWEAVER_EXPORT Chunk *GetChildAt(size_t index) const { return children_.at(index); }
+  LIBWEAVER_EXPORT size_t GetChildCount() const { return children_.size(); }
 
-  Type type() const { return static_cast<Type>(id_); }
-  const u32 &id() const { return id_; }
-  const u32 &offset() const { return offset_; }
-  bytearray &data() { return data_; }
-  bytearray &exdata() { return exdata_; }
+  LIBWEAVER_EXPORT Type type() const { return static_cast<Type>(id_); }
+  LIBWEAVER_EXPORT const u32 &id() const { return id_; }
+  LIBWEAVER_EXPORT const u32 &offset() const { return offset_; }
 
-  static const char *GetTypeDescription(Type type);
-  const char *GetTypeDescription() const
+  LIBWEAVER_EXPORT Data &data(const std::string &key) { return data_[key]; }
+  LIBWEAVER_EXPORT const Data &data(const std::string &key) const { return data_.at(key); }
+
+  LIBWEAVER_EXPORT static const char *GetTypeDescription(Type type);
+  LIBWEAVER_EXPORT const char *GetTypeDescription() const
   {
     return GetTypeDescription(type());
   }
@@ -64,8 +66,7 @@ private:
 
   u32 id_;
   u32 offset_;
-  bytearray data_;
-  bytearray exdata_;
+  std::map<std::string, Data> data_;
 
   Chunk *parent_;
   Children children_;

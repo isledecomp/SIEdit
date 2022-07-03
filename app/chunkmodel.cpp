@@ -1,6 +1,5 @@
 #include "chunkmodel.h"
 
-#include <data/riff.h>
 #include <iostream>
 
 #define super QAbstractItemModel

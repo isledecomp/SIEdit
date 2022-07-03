@@ -1,6 +1,5 @@
 #include "mxhd.h"
 
-#include <data/mxhd.h>
 #include <QLabel>
 
 using namespace si;
@@ -50,22 +49,19 @@ MxHdPanel::MxHdPanel(QWidget *parent)
 
 void MxHdPanel::OnOpeningData(Chunk *chunk)
 {
-  MxHd *mxhd = chunk->data().cast<MxHd>();
-
-  uint16_t major_ver = mxhd->dwVersion >> 16;
-  uint16_t minor_ver = mxhd->dwVersion;
+  si::u32 version = chunk->data("Version");
+  uint16_t major_ver = version >> 16;
+  uint16_t minor_ver = version;
 
   major_version_edit_->setValue(major_ver);
   minor_version_edit_->setValue(minor_ver);
-  buffer_alignment_edit_->setValue(mxhd->dwBufferSize);
-  buffer_count_edit_->setValue(mxhd->dwBufferCount);
+  buffer_alignment_edit_->setValue(chunk->data("BufferSize"));
+  buffer_count_edit_->setValue(chunk->data("BufferCount"));
 }
 
 void MxHdPanel::OnClosingData(Chunk *chunk)
 {
-  MxHd *mxhd = chunk->data().cast<MxHd>();
-
-  mxhd->dwVersion = (major_version_edit_->value() << 16 | (minor_version_edit_->value() & 0xFFFF));
-  mxhd->dwBufferSize = buffer_alignment_edit_->value();
-  mxhd->dwBufferCount = buffer_count_edit_->value();
+  chunk->data("Version") = (major_version_edit_->value() << 16 | (minor_version_edit_->value() & 0xFFFF));
+  chunk->data("BufferSize") = buffer_alignment_edit_->value();
+  chunk->data("BufferCount") = buffer_count_edit_->value();
 }

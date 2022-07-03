@@ -1,6 +1,5 @@
 #include "riff.h"
 
-#include <data/riff.h>
 #include <QLabel>
 
 using namespace si;
@@ -21,16 +20,12 @@ RIFFPanel::RIFFPanel(QWidget *parent) :
 
 void RIFFPanel::OnOpeningData(Chunk *chunk)
 {
-  RIFF *riff = chunk->data().cast<RIFF>();
-
-  QString s = QString::fromLatin1((const char *) &riff->dwID, sizeof(u32));
+  QString s = QString::fromLatin1(chunk->data("Format").c_str(), sizeof(u32));
   id_edit_->setText(s);
 }
 
 void RIFFPanel::OnClosingData(Chunk *chunk)
 {
-  RIFF *riff = chunk->data().cast<RIFF>();
-
   QByteArray d = id_edit_->text().toLatin1();
 
   const int target_sz = sizeof(u32);
@@ -43,5 +38,5 @@ void RIFFPanel::OnClosingData(Chunk *chunk)
     }
   }
 
-  riff->dwID = *(u32*)d.data();
+  chunk->data("Format") = *(u32*)d.data();
 }

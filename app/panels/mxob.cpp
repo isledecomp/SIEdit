@@ -1,6 +1,6 @@
 #include "mxob.h"
 
-#include <data/mxob.h>
+#include <sitypes.h>
 #include <QLabel>
 
 using namespace si;
@@ -53,18 +53,14 @@ MxObPanel::MxObPanel(QWidget *parent) :
 
 void MxObPanel::OnOpeningData(si::Chunk *chunk)
 {
-  auto mxob = chunk->data().cast<MxOb>();
-
-  type_combo_->setCurrentIndex(mxob->wType);
-  name_edit_->setText(mxob->szName);
-  filename_edit_->setText(mxob->szFilename);
-  presenter_edit_->setText(mxob->szPresenter);
-  obj_id_edit_->setValue(mxob->dwObjectID);
+  type_combo_->setCurrentIndex(chunk->data("Type"));
+  name_edit_->setText(QString(chunk->data("Name")));
+  filename_edit_->setText(QString(chunk->data("FileName")));
+  presenter_edit_->setText(QString(chunk->data("Presenter")));
+  obj_id_edit_->setValue(chunk->data("ID"));
 }
 
 void MxObPanel::OnClosingData(si::Chunk *chunk)
 {
-  auto mxob = chunk->data().cast<MxOb>();
-
-  mxob->wType = type_combo_->currentIndex();
+  chunk->data("Type") = type_combo_->currentIndex();
 }
