@@ -4,7 +4,6 @@
 #include <QFileDialog>
 #include <QMenuBar>
 #include <QSplitter>
-#include <QTreeWidget>
 
 using namespace si;
 
@@ -19,15 +18,17 @@ MainWindow::MainWindow(QWidget *parent) :
   auto tree_tab = new QTabWidget();
   splitter->addWidget(tree_tab);
 
-  auto simple_tree = new QTreeView();
+  /*auto simple_tree = new QTreeView();
   simple_tree->setModel(&object_model_);
   tree_tab->addTab(simple_tree, tr("Simple"));
-  connect(simple_tree->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);
+  connect(simple_tree->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);*/
 
-  auto lowlevel_tree = new QTreeView();
-  lowlevel_tree->setModel(&chunk_model_);
-  tree_tab->addTab(lowlevel_tree, tr("Advanced"));
-  connect(lowlevel_tree->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);
+  lowlevel_tree_ = new QTreeView();
+  lowlevel_tree_->setModel(&chunk_model_);
+  lowlevel_tree_->setContextMenuPolicy(Qt::CustomContextMenu);
+  tree_tab->addTab(lowlevel_tree_, tr("Advanced"));
+  connect(lowlevel_tree_->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);
+  connect(lowlevel_tree_, &QTreeView::customContextMenuRequested, this, &MainWindow::ShowContextMenu);
 
   config_stack_ = new QStackedWidget();
   splitter->addWidget(config_stack_);
@@ -133,5 +134,42 @@ void MainWindow::SelectionChanged(const QModelIndex &index)
 
   if (p != config_stack_->currentWidget() || c != last_set_data_) {
     SetPanel(p, c);
+  }
+}
+
+void MainWindow::ShowContextMenu(const QPoint &p)
+{
+  QMenu menu(this);
+
+  QAction *extract_action = menu.addAction(tr("E&xtract"));
+  connect(extract_action, &QAction::triggered, this, &MainWindow::ExtractSelectedItems);
+
+  menu.exec(static_cast<QWidget*>(sender())->mapToGlobal(p));
+}
+
+void MainWindow::ExtractSelectedItems()
+{
+  auto selected = lowlevel_tree_->selectionModel()->selectedRows();
+  if (selected.empty()) {
+    return;
+  }
+
+  for (const QModelIndex &i : selected) {
+    if (Chunk *chunk = static_cast<Chunk*>(i.internalPointer())) {
+      QString filename(chunk->data("FileName"));
+      if (filename.isEmpty()) {
+        filename = QString(chunk->data("Name"));
+        filename.append(QStringLiteral(".bin"));
+      }
+      if (filename.isEmpty()) {
+        filename = QStringLiteral("%1_%2.bin").arg(QString::fromLatin1((const char *) &chunk->id(), sizeof(u32)),
+                                                   QString::number(chunk->offset(), 16));
+      }
+
+      QString s = QFileDialog::getSaveFileName(this, tr("Export Object"), filename);
+      if (!s.isEmpty()) {
+        //chunk->Export()
+      }
+    }
   }
 }

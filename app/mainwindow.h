@@ -4,6 +4,7 @@
 #include <chunk.h>
 #include <QMainWindow>
 #include <QStackedWidget>
+#include <QTreeView>
 
 #include "chunkmodel.h"
 #include "objectmodel.h"
@@ -37,6 +38,8 @@ private:
 
   QStackedWidget *config_stack_;
 
+  QTreeView *lowlevel_tree_;
+
   Panel *panel_blank_;
   RIFFPanel *panel_riff_;
   MxHdPanel *panel_mxhd_;
@@ -52,6 +55,10 @@ private slots:
   //bool SaveFileAs();
 
   void SelectionChanged(const QModelIndex &index);
+
+  void ShowContextMenu(const QPoint &p);
+
+  void ExtractSelectedItems();
 
 };
 
