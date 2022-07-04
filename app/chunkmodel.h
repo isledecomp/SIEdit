@@ -12,6 +12,7 @@ public:
     kColType,
     kColOffset,
     kColDesc,
+    kColObjectID,
 
     kColCount
   };

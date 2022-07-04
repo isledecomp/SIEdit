@@ -75,6 +75,13 @@ QVariant ChunkModel::data(const QModelIndex &index, int role) const
       return QStringLiteral("0x%1").arg(QString::number(c->offset(), 16).toUpper());
     case kColDesc:
       return QString::fromUtf8(c->GetTypeDescription());
+    case kColObjectID:
+      if (c->type() == Chunk::TYPE_MxOb) {
+        return c->data("ID").toU32();
+      } else if (c->type() == Chunk::TYPE_MxCh) {
+        return c->data("Object").toU32();
+      }
+      break;
     }
 
     break;
@@ -93,6 +100,8 @@ QVariant ChunkModel::headerData(int section, Qt::Orientation orientation, int ro
       return tr("Offset");
     case kColDesc:
       return tr("Description");
+    case kColObjectID:
+      return tr("Object ID");
     }
   }
 
