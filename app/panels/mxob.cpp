@@ -51,6 +51,24 @@ MxObPanel::MxObPanel(QWidget *parent) :
 
   row++;
 
+  layout()->addWidget(new QLabel(tr("Duration")), row, 0);
+
+  duration_edit_ = new QSpinBox();
+  duration_edit_->setMinimum(0);
+  duration_edit_->setMaximum(INT_MAX);
+  layout()->addWidget(duration_edit_, row, 1);
+
+  row++;
+
+  layout()->addWidget(new QLabel(tr("Loops")), row, 0);
+
+  loops_edit_ = new QSpinBox();
+  loops_edit_->setMinimum(0);
+  loops_edit_->setMaximum(INT_MAX);
+  layout()->addWidget(loops_edit_, row, 1);
+  
+  row++;
+
   auto pos_grp = new QGroupBox(tr("Position"));
   auto pos_lyt = new QVBoxLayout(pos_grp);
   pos_lyt->setMargin(0);
@@ -87,6 +105,9 @@ void MxObPanel::OnOpeningData(si::Chunk *chunk)
   presenter_edit_->setText(QString(chunk->data("Presenter")));
   obj_id_edit_->setValue(chunk->data("ID"));
 
+  duration_edit_->setValue(chunk->data("Duration"));
+  loops_edit_->setValue(chunk->data("Loops"));
+
   pos_edit_->SetValue(chunk->data("Position"));
   dir_edit_->SetValue(chunk->data("Direction"));
   up_edit_->SetValue(chunk->data("Up"));
@@ -95,6 +116,9 @@ void MxObPanel::OnOpeningData(si::Chunk *chunk)
 void MxObPanel::OnClosingData(si::Chunk *chunk)
 {
   chunk->data("Type") = type_combo_->currentIndex();
+
+  chunk->data("Duration") = duration_edit_->value();
+  chunk->data("Loops") = loops_edit_->value();
 
   chunk->data("Position") = pos_edit_->GetValue();
   chunk->data("Direction") = dir_edit_->GetValue();

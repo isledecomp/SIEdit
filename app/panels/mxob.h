@@ -25,6 +25,9 @@ private:
   QLineEdit *filename_edit_;
   QSpinBox *obj_id_edit_;
 
+  QSpinBox *duration_edit_;
+  QSpinBox *loops_edit_;
+
   Vector3Edit *pos_edit_;
   Vector3Edit *dir_edit_;
   Vector3Edit *up_edit_;
