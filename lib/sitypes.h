@@ -3,7 +3,7 @@
 
 #include <fstream>
 
-#include "chunk.h"
+#include "common.h"
 #include "types.h"
 
 namespace si {
@@ -86,7 +86,7 @@ public:
  * Name       | Size     | Type             | Description
  * ---------- | -------- | ---------------- | -----------
  * Count      | 4        | u32              | Number of objects in this list. Not necessarily the number of offsets, as one offset may point to an object with multiple sub-objects.
- * Offsets    | Count*4  | bytearray/u32[]  | List of 4-byte file offsets where objects begin.
+ * Offsets    | Variable | bytearray/u32[]  | List of 4-byte file offsets where objects begin.
  */
 class MxOf : public RIFF
 {
