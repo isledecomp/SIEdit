@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "common.h"
+#include "sitypes.h"
 #include "types.h"
 
 namespace si {
@@ -57,12 +58,17 @@ public:
     return GetTypeDescription(type());
   }
 
+  LIBWEAVER_EXPORT Chunk *FindChildWithType(Type type) const;
+  LIBWEAVER_EXPORT Chunk *FindChildWithOffset(u32 offset) const;
+
 private:
   // Disable copy
   Chunk(const Chunk& other);
   Chunk& operator=(const Chunk& other);
 
   bool Read(std::ifstream &f, u32 &version, u32 &alignment);
+
+  static RIFF *GetReaderFromType(Type type);
 
   u32 id_;
   u32 offset_;

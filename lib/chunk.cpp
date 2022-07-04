@@ -54,33 +54,15 @@ bool Chunk::Read(std::ifstream &f, u32 &version, u32 &alignment)
   // Read custom data from this chunk
   Clear();
 
-  switch (type()) {
-  case TYPE_RIFF:
-    RIFF().Read(f, data_, version, size);
-    break;
-  case TYPE_MxHd:
-    MxHd().Read(f, data_, version, size);
-    version = data_["Version"];
-    alignment = data_["BufferSize"];
-    break;
-  case TYPE_LIST:
-    LIST().Read(f, data_, version, size);
-    break;
-  case TYPE_MxSt:
-    MxSt().Read(f, data_, version, size);
-    break;
-  case TYPE_MxCh:
-    MxCh().Read(f, data_, version, size);
-    break;
-  case TYPE_MxOf:
-    MxOf().Read(f, data_, version, size);
-    break;
-  case TYPE_pad_:
-    pad_().Read(f, data_, version, size);
-    break;
-  case TYPE_MxOb:
-    MxOb().Read(f, data_, version, size);
-    break;
+  if (RIFF *reader = GetReaderFromType(type())) {
+    reader->Read(f, data_, version, size);
+
+    if (type() == TYPE_MxHd) {
+      version = data_["Version"];
+      alignment = data_["BufferSize"];
+    }
+
+    delete reader;
   }
 
   // Assume any remaining data is this chunk's children
@@ -107,6 +89,30 @@ bool Chunk::Read(std::ifstream &f, u32 &version, u32 &alignment)
   }
 
   return true;
+}
+
+RIFF *Chunk::GetReaderFromType(Type type)
+{
+  switch (type) {
+  case TYPE_RIFF:
+    return new RIFF();
+  case TYPE_MxHd:
+    return new MxHd();
+  case TYPE_LIST:
+    return new LIST();
+  case TYPE_MxSt:
+    return new MxSt();
+  case TYPE_MxCh:
+    return new MxCh();
+  case TYPE_MxOf:
+    return new MxOf();
+  case TYPE_pad_:
+    return new pad_();
+  case TYPE_MxOb:
+    return new MxOb();
+  }
+
+  return NULL;
 }
 
 void Chunk::Clear()
@@ -190,6 +196,32 @@ const char *Chunk::GetTypeDescription(Type type)
   }
 
   return "Unknown";
+}
+
+Chunk *Chunk::FindChildWithType(Type type) const
+{
+  for (Chunk *child : children_) {
+    if (child->type() == type) {
+      return child;
+    } else if (Chunk *grandchild = child->FindChildWithType(type)) {
+      return grandchild;
+    }
+  }
+
+  return NULL;
+}
+
+Chunk *Chunk::FindChildWithOffset(u32 offset) const
+{
+  for (Chunk *child : children_) {
+    if (child->offset() == offset) {
+      return child;
+    } else if (Chunk *grandchild = child->FindChildWithOffset(offset)) {
+      return grandchild;
+    }
+  }
+
+  return NULL;
 }
 
 }
