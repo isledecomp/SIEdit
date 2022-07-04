@@ -92,7 +92,7 @@ void MxChPanel::OnOpeningData(Chunk *chunk)
   }
 
   const Data &data = chunk->data("Data");
-  QByteArray ba(data.data(), data.size());
+  QByteArray ba(data.data(), int(data.size()));
   data_edit_->setPlainText(ba.toHex());
 }
 

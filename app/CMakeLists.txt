@@ -17,11 +17,15 @@ set(PROJECT_SOURCES
   panels/riff.cpp
   panels/riff.h
 
+  abstractsiitemmodel.cpp
+  abstractsiitemmodel.h
   chunkmodel.cpp
   chunkmodel.h
   main.cpp
   mainwindow.cpp
   mainwindow.h
+  objectmodel.cpp
+  objectmodel.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

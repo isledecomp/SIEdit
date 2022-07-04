@@ -1,22 +1,21 @@
-#ifndef CHUNKMODEL_H
-#define CHUNKMODEL_H
+#ifndef OBJECTMODEL_H
+#define OBJECTMODEL_H
 
 #include "abstractsiitemmodel.h"
 
-class ChunkModel : public AbstractSIItemModel
+class ObjectModel : public AbstractSIItemModel
 {
   Q_OBJECT
 public:
-  enum Columns
-  {
-    kColType,
+  enum Columns {
+    kColIndex,
     kColOffset,
-    kColDesc,
+    kColName,
 
     kColCount
   };
 
-  explicit ChunkModel(QObject *parent = nullptr);
+  explicit ObjectModel(QObject *parent = nullptr);
 
   virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
   virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
@@ -25,6 +24,10 @@ public:
   virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
   virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
+private:
+  si::Chunk *GetMxOf() const;
+  si::Chunk *GetItem(size_t index, si::u32 *offset_out = NULL) const;
+
 };
 
-#endif // CHUNKMODEL_H
+#endif // OBJECTMODEL_H

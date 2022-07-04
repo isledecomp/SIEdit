@@ -16,12 +16,18 @@ MainWindow::MainWindow(QWidget *parent) :
   splitter->setChildrenCollapsible(false);
   this->setCentralWidget(splitter);
 
-  model_.SetChunk(&chunk_);
+  auto tree_tab = new QTabWidget();
+  splitter->addWidget(tree_tab);
 
-  auto tree = new QTreeView();
-  tree->setModel(&model_);
-  splitter->addWidget(tree);
-  connect(tree->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);
+  auto simple_tree = new QTreeView();
+  simple_tree->setModel(&object_model_);
+  tree_tab->addTab(simple_tree, tr("Simple"));
+  connect(simple_tree->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);
+
+  auto lowlevel_tree = new QTreeView();
+  lowlevel_tree->setModel(&chunk_model_);
+  tree_tab->addTab(lowlevel_tree, tr("Advanced"));
+  connect(lowlevel_tree->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);
 
   config_stack_ = new QStackedWidget();
   splitter->addWidget(config_stack_);
@@ -51,10 +57,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::OpenFilename(const QString &s)
 {
-  model_.SetChunk(nullptr);
+  object_model_.SetChunk(nullptr);
+  chunk_model_.SetChunk(nullptr);
   SetPanel(panel_blank_, nullptr);
   chunk_.Read(s.toStdString());
-  model_.SetChunk(&chunk_);
+  object_model_.SetChunk(&chunk_);
+  chunk_model_.SetChunk(&chunk_);
 }
 
 void MainWindow::InitializeMenuBar()

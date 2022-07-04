@@ -2,13 +2,12 @@
 
 #include <iostream>
 
-#define super QAbstractItemModel
+#define super AbstractSIItemModel
 
 using namespace si;
 
 ChunkModel::ChunkModel(QObject *parent) :
-  super{parent},
-  chunk_(nullptr)
+  super{parent}
 {
 }
 
@@ -45,7 +44,7 @@ QModelIndex ChunkModel::parent(const QModelIndex &index) const
   }
 
   size_t row = grandparent->IndexOfChild(parent);
-  return createIndex(row, 0, parent);
+  return createIndex(int(row), 0, parent);
 }
 
 int ChunkModel::rowCount(const QModelIndex &parent) const
@@ -55,7 +54,7 @@ int ChunkModel::rowCount(const QModelIndex &parent) const
     return 0;
   }
 
-  return c->GetChildCount();
+  return int(c->GetChildCount());
 }
 
 QVariant ChunkModel::data(const QModelIndex &index, int role) const
@@ -98,20 +97,4 @@ QVariant ChunkModel::headerData(int section, Qt::Orientation orientation, int ro
   }
 
   return super::headerData(section, orientation, role);
-}
-
-void ChunkModel::SetChunk(si::Chunk *c)
-{
-  beginResetModel();
-  chunk_ = c;
-  endResetModel();
-}
-
-si::Chunk *ChunkModel::GetChunkFromIndex(const QModelIndex &index) const
-{
-  if (!index.isValid()) {
-    return chunk_;
-  } else {
-    return static_cast<Chunk*>(index.internalPointer());
-  }
 }

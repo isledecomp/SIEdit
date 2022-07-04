@@ -6,6 +6,7 @@
 #include <QStackedWidget>
 
 #include "chunkmodel.h"
+#include "objectmodel.h"
 #include "panels/mxch.h"
 #include "panels/mxhd.h"
 #include "panels/mxob.h"
@@ -30,7 +31,8 @@ private:
 
   void SetPanel(Panel *panel, si::Chunk *chunk);
 
-  ChunkModel model_;
+  ObjectModel object_model_;
+  ChunkModel chunk_model_;
   si::Chunk chunk_;
 
   QStackedWidget *config_stack_;
