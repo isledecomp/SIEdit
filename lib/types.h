@@ -29,6 +29,22 @@ public:
 
 };
 
+class Vector3
+{
+public:
+  Vector3(){}
+  Vector3(f64 ix, f64 iy, f64 iz)
+  {
+    x = ix;
+    y = iy;
+    z = iz;
+  }
+
+  f64 x;
+  f64 y;
+  f64 z;
+};
+
 class Data
 {
 public:
@@ -39,6 +55,7 @@ public:
   }
 
   inline Data(const u32 &u) { set(u); }
+  inline Data(const Vector3 &u) { set(u); }
   inline Data(const bytearray &u) { set(u); }
   inline Data(const std::string &u)
   {
@@ -56,10 +73,16 @@ public:
     return data();
   }
 
+  inline operator Vector3() const
+  {
+    return toVector3();
+  }
+
   inline u16 toU16() const { return *data_.cast<si::u16>(); }
   inline s16 toS16() const { return *data_.cast<si::s16>(); }
   inline u32 toU32() const { return *data_.cast<si::u32>(); }
   inline s32 toS32() const { return *data_.cast<si::s32>(); }
+  inline Vector3 toVector3() const { return *data_.cast<si::Vector3>(); }
   inline const char *data() const { return data_.data(); };
   inline char *data() { return data_.data(); };
   inline const char *c_str() const { return this->data(); };
@@ -98,14 +121,6 @@ public:
 private:
   bytearray data_;
 
-};
-
-class Vector3
-{
-public:
-  f32 x;
-  f32 y;
-  f32 z;
 };
 
 using DataMap = std::map<std::string, Data>;

@@ -1,6 +1,7 @@
 #include "mxob.h"
 
 #include <sitypes.h>
+#include <QGroupBox>
 #include <QLabel>
 
 using namespace si;
@@ -48,6 +49,33 @@ MxObPanel::MxObPanel(QWidget *parent) :
   presenter_edit_ = new QLineEdit();
   layout()->addWidget(presenter_edit_, row, 1);
 
+  row++;
+
+  auto pos_grp = new QGroupBox(tr("Position"));
+  auto pos_lyt = new QVBoxLayout(pos_grp);
+  pos_lyt->setMargin(0);
+  pos_edit_ = new Vector3Edit();
+  pos_lyt->addWidget(pos_edit_);
+  layout()->addWidget(pos_grp, row, 0, 1, 2);
+
+  row++;
+
+  auto dir_grp = new QGroupBox(tr("Direction"));
+  auto dir_lyt = new QVBoxLayout(dir_grp);
+  dir_lyt->setMargin(0);
+  dir_edit_ = new Vector3Edit();
+  dir_lyt->addWidget(dir_edit_);
+  layout()->addWidget(dir_grp, row, 0, 1, 2);
+
+  row++;
+
+  auto up_grp = new QGroupBox(tr("Up"));
+  auto up_lyt = new QVBoxLayout(up_grp);
+  up_lyt->setMargin(0);
+  up_edit_ = new Vector3Edit();
+  up_lyt->addWidget(up_edit_);
+  layout()->addWidget(up_grp, row, 0, 1, 2);
+
   FinishLayout();
 }
 
@@ -58,9 +86,17 @@ void MxObPanel::OnOpeningData(si::Chunk *chunk)
   filename_edit_->setText(QString(chunk->data("FileName")));
   presenter_edit_->setText(QString(chunk->data("Presenter")));
   obj_id_edit_->setValue(chunk->data("ID"));
+
+  pos_edit_->SetValue(chunk->data("Position"));
+  dir_edit_->SetValue(chunk->data("Direction"));
+  up_edit_->SetValue(chunk->data("Up"));
 }
 
 void MxObPanel::OnClosingData(si::Chunk *chunk)
 {
   chunk->data("Type") = type_combo_->currentIndex();
+
+  chunk->data("Position") = pos_edit_->GetValue();
+  chunk->data("Direction") = dir_edit_->GetValue();
+  chunk->data("Up") = up_edit_->GetValue();
 }

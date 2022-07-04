@@ -6,6 +6,7 @@
 #include <QSpinBox>
 
 #include "panel.h"
+#include "vector3edit.h"
 
 class MxObPanel : public Panel
 {
@@ -23,6 +24,10 @@ private:
   QLineEdit *presenter_edit_;
   QLineEdit *filename_edit_;
   QSpinBox *obj_id_edit_;
+
+  Vector3Edit *pos_edit_;
+  Vector3Edit *dir_edit_;
+  Vector3Edit *up_edit_;
 
 };
 

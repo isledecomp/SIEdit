@@ -18,6 +18,13 @@ Data ReadU16(std::ifstream &is)
   return u;
 }
 
+Data ReadVector3(std::ifstream &is)
+{
+  Vector3 u;
+  is.read((char *) &u, sizeof(u));
+  return u;
+}
+
 Data ReadString(std::ifstream &is)
 {
   bytearray d;
@@ -132,24 +139,9 @@ void MxOb::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
   data["Unknown4"] = ReadU32(is);
   data["Unknown5"] = ReadU32(is);
   data["Unknown6"] = ReadU32(is);
-  data["Unknown7"] = ReadU32(is);
-  data["Unknown8"] = ReadU32(is);
-  data["Unknown9"] = ReadU32(is);
-  data["Unknown10"] = ReadU32(is);
-  data["Unknown11"] = ReadU32(is);
-  data["Unknown12"] = ReadU32(is);
-  data["Unknown13"] = ReadU32(is);
-  data["Unknown14"] = ReadU32(is);
-  data["Unknown15"] = ReadU32(is);
-  data["Unknown16"] = ReadU32(is);
-  data["Unknown17"] = ReadU32(is);
-  data["Unknown18"] = ReadU32(is);
-  data["Unknown19"] = ReadU32(is);
-  data["Unknown20"] = ReadU32(is);
-  data["Unknown21"] = ReadU32(is);
-  data["Unknown22"] = ReadU32(is);
-  data["Unknown23"] = ReadU32(is);
-  data["Unknown24"] = ReadU32(is);
+  data["Position"] = ReadVector3(is);
+  data["Direction"] = ReadVector3(is);
+  data["Up"] = ReadVector3(is);
 
   Data extra_sz = ReadU16(is);
   data["ExtraLength"] = extra_sz;

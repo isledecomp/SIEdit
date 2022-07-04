@@ -120,24 +120,9 @@ public:
  * Unknown4    | 4        | u32              |
  * Unknown5    | 4        | u32              |
  * Unknown6    | 4        | u32              |
- * Unknown7    | 4        | u32              |
- * Unknown8    | 4        | u32              |
- * Unknown9    | 4        | u32              |
- * Unknown10   | 4        | u32              |
- * Unknown11   | 4        | u32              |
- * Unknown12   | 4        | u32              |
- * Unknown13   | 4        | u32              |
- * Unknown14   | 4        | u32              |
- * Unknown15   | 4        | u32              |
- * Unknown16   | 4        | u32              |
- * Unknown17   | 4        | u32              |
- * Unknown18   | 4        | u32              |
- * Unknown19   | 4        | u32              |
- * Unknown20   | 4        | u32              |
- * Unknown21   | 4        | u32              |
- * Unknown22   | 4        | u32              |
- * Unknown23   | 4        | u32              |
- * Unknown24   | 4        | u32              |
+ * Position    | 24       | Vector3          | Position
+ * Direction   | 24       | Vector3          | Position
+ * Up          | 24       | Vector3          | Position
  * ExtraLength | 2        | u16              |
  * ExtraData   | ExtraLength | bytearray     |
  * FileName    | Variable | string           | Original filename of the file represented by this object.

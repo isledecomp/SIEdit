@@ -26,6 +26,8 @@ set(PROJECT_SOURCES
   mainwindow.h
   objectmodel.cpp
   objectmodel.h
+  vector3edit.cpp
+  vector3edit.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
