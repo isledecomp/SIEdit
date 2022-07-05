@@ -116,9 +116,7 @@ public:
  * Unknown1    | 4        | u32              |
  * Name        | Variable | string           | Null-terminated string identifying object's name
  * ID          | 4        | u32              | Unique object identifier within file (used to differentiate interleaved MxChs)
- * Flags       | 1        | u8               | Flags of object (member of MxOb::Flags enum)
- * Padding1    | 1        | u8               |
- * Padding2    | 2        | u16              |
+ * Flags       | 4        | u32              | Flags of object (member of MxOb::Flags enum)
  * Unknown4    | 4        | u32              | Similar to Duration, but only used for Lego3DWavePresenter
  * Duration    | 4        | u32              | Duration in milliseconds * Loops
  * Loops       | 4        | u32              |
@@ -171,20 +169,20 @@ public:
 
   enum Flags
   {
-    /// Object is transparent
-    Transparent = 0b00001000,
-    
-    /// Object does not loop
-    NoLoop = 0b00000010,
-
     /// Object loops via cache (i.e. hard disk)
-    LoopCache = 0b00000001,
-    
+    LoopCache = 0x01,
+
+    /// Object does not loop
+    NoLoop = 0x02,
+
     /// Object loops via stream (i.e. CD-ROM)
-    LoopStream = 0b00000100,
+    LoopStream = 0x04,
+
+    /// Object is transparent
+    Transparent = 0x08,
 
     /// Unknown flag, but set by every object thus far
-    Unknown = 0b00100000,
+    Unknown = 0x20,
 
     /// Total number of flags (not a real type)
     FLAGS_COUNT

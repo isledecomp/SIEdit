@@ -169,9 +169,7 @@ void MxOb::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
   data["Unknown1"] = ReadU32(is);
   data["Name"] = ReadString(is);
   data["ID"] = ReadU32(is);
-  data["Flags"] = ReadU8(is);
-  data["Padding1"] = ReadU8(is);
-  data["Padding2"] = ReadU16(is);
+  data["Flags"] = ReadU32(is);
   data["Unknown4"] = ReadU32(is);
   data["Duration"] = ReadU32(is);
   data["Loops"] = ReadU32(is);
