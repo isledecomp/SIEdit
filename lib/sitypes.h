@@ -116,13 +116,13 @@ public:
  * Unknown1    | 4        | u32              |
  * Name        | Variable | string           | Null-terminated string identifying object's name
  * ID          | 4        | u32              | Unique object identifier within file (used to differentiate interleaved MxChs)
- * Unknown3    | 4        | u32              |
- * Unknown4    | 4        | u32              |
- * Unknown5    | 4        | u32              |
- * Unknown6    | 4        | u32              |
+ * Flags       | 4        | u32              | Flags of object (member of MxOb::Flags enum)
+ * Unknown4    | 4        | u32              | Similar to Duration, but only used for Lego3DWavePresenter
+ * Duration    | 4        | u32              | Duration in milliseconds * Loops
+ * Loops       | 4        | u32              |
  * Position    | 24       | Vector3          | Position
- * Direction   | 24       | Vector3          | Position
- * Up          | 24       | Vector3          | Position
+ * Direction   | 24       | Vector3          | Direction to look towards
+ * Up          | 24       | Vector3          | Up vector
  * ExtraLength | 2        | u16              |
  * ExtraData   | ExtraLength | bytearray     |
  * FileName    | Variable | string           | Original filename of the file represented by this object.
@@ -167,9 +167,31 @@ public:
     TYPE_COUNT
   };
 
+  enum Flags
+  {
+    /// Object loops via cache (i.e. hard disk)
+    LoopCache = 0x01,
+
+    /// Object does not loop
+    NoLoop = 0x02,
+
+    /// Object loops via stream (i.e. CD-ROM)
+    LoopStream = 0x04,
+
+    /// Object is transparent
+    Transparent = 0x08,
+
+    /// Unknown flag, but set by every object thus far
+    Unknown = 0x20,
+
+    /// Total number of flags (not a real type)
+    FLAGS_COUNT
+  };
+
   // FIXME: sitypes.h probably won't be part of the public API, so this should
   //        probably be moved
   LIBWEAVER_EXPORT static const char *GetTypeName(Type type);
+  LIBWEAVER_EXPORT static std::vector<const char*> GetFlagsName(Flags flags);
 
   virtual void Read(std::ifstream &is, DataMap &data, u32 version, u32 size);
 };

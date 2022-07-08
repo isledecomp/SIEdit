@@ -18,6 +18,13 @@ Data ReadU16(std::ifstream &is)
   return u;
 }
 
+Data ReadU8(std::ifstream &is)
+{
+  u8 u;
+  is.read((char *) &u, sizeof(u));
+  return u;
+}
+
 Data ReadVector3(std::ifstream &is)
 {
   Vector3 u;
@@ -127,6 +134,33 @@ const char *MxOb::GetTypeName(Type type)
   return "Unknown";
 }
 
+std::vector<const char*> MxOb::GetFlagsName(Flags flags)
+{
+  std::vector<const char*> names;
+
+  if (flags == FLAGS_COUNT) {
+    return names;
+  }
+
+  if (flags & Transparent) {
+    names.push_back("Transparent");
+  }
+  if (flags & NoLoop) {
+    names.push_back("NoLoop");
+  }
+  if (flags & LoopCache) {
+    names.push_back("LoopCache");
+  }
+  if (flags & LoopStream) {
+    names.push_back("LoopStream");
+  }
+  if (flags & Unknown) {
+    names.push_back("Unknown");
+  }
+
+  return names;
+}
+
 void MxOb::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
 {
   Data obj_type = ReadU16(is);
@@ -135,10 +169,10 @@ void MxOb::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
   data["Unknown1"] = ReadU32(is);
   data["Name"] = ReadString(is);
   data["ID"] = ReadU32(is);
-  data["Unknown3"] = ReadU32(is);
+  data["Flags"] = ReadU32(is);
   data["Unknown4"] = ReadU32(is);
-  data["Unknown5"] = ReadU32(is);
-  data["Unknown6"] = ReadU32(is);
+  data["Duration"] = ReadU32(is);
+  data["Loops"] = ReadU32(is);
   data["Position"] = ReadVector3(is);
   data["Direction"] = ReadVector3(is);
   data["Up"] = ReadVector3(is);
