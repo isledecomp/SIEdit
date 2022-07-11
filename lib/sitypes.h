@@ -18,6 +18,10 @@ namespace si {
 class RIFF
 {
 public:
+  enum {
+    OMNI = 0x494e4d4f
+  };
+
   virtual ~RIFF(){}
 
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
@@ -81,6 +85,13 @@ public:
 class MxCh : public RIFF
 {
 public:
+  enum Flag {
+    FLAG_SPLIT = 0x16,
+    FLAG_END = 0x2
+  };
+
+  static const uint32_t HEADER_SIZE = 14;
+
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
   virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
@@ -110,7 +121,7 @@ class pad_ : public RIFF
 {
 public:
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
-  void WritePadding(std::ofstream &os, size_t size);
+  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -146,6 +157,10 @@ class MxOb : public RIFF
 public:
   enum Type
   {
+    /// Not an MxOb type, this is our identifier for an object that is in the TOC but doesn't
+    /// actually exist
+    Null = -1,
+
     /// Video
     Video = 0x03,
 
@@ -202,6 +217,9 @@ public:
 
     /// Bitmap image
     STL = 0x4C545320,
+
+    /// FLIC animation
+    FLC = 0x434c4620,
   };
 
   // FIXME: sitypes.h probably won't be part of the public API, so this should

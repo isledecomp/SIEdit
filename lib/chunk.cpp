@@ -8,9 +8,10 @@
 
 namespace si {
 
-Chunk::Chunk()
+Chunk::Chunk(uint32_t id) :
+  id_(id),
+  offset_(0)
 {
-  id_ = 0;
 }
 
 Chunk::~Chunk()
@@ -89,6 +90,40 @@ bool Chunk::Read(std::ifstream &f, uint32_t &version, uint32_t &alignment)
   return true;
 }
 
+bool Chunk::Write(std::ofstream &f, const uint32_t &version) const
+{
+  // Write 4-byte ID
+  f.write((const char *) &id_, sizeof(id_));
+
+  // Write placeholder for size and store position so we can come back later
+  uint32_t chunk_size = 0;
+  std::ios::pos_type size_pos = f.tellp();
+  f.write((const char *) &chunk_size, sizeof(chunk_size));
+
+  if (RIFF *writer = GetReaderFromType(type())) {
+    writer->Write(f, data_, version);
+    delete writer;
+  }
+
+  for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
+    static_cast<Chunk*>(*it)->Write(f, version);
+  }
+
+  // Backtrack and write chunk size
+  chunk_size = uint32_t(f.tellp()) - (uint32_t(size_pos) + sizeof(uint32_t));
+  f.seekp(size_pos);
+  f.write((const char *) &chunk_size, sizeof(chunk_size));
+  f.seekp(0, std::ios::end);
+
+  // Byte align to 2
+  if (chunk_size%2 == 1) {
+    const char nothing = 0;
+    f.write(&nothing, 1);
+  }
+
+  return true;
+}
+
 RIFF *Chunk::GetReaderFromType(Type type)
 {
   switch (type) {
@@ -108,6 +143,8 @@ RIFF *Chunk::GetReaderFromType(Type type)
     return new pad_();
   case TYPE_MxOb:
     return new MxOb();
+  case TYPE_MxDa:
+    break;
   }
 
   return NULL;
@@ -120,6 +157,23 @@ void Chunk::Clear()
 
   // Delete children
   DeleteChildren();
+}
+
+bool Chunk::Write(const std::string &f)
+{
+  return Write(f.c_str());
+}
+
+bool Chunk::Write(const char *f)
+{
+  std::ofstream file(f, std::ios::out | std::ios::binary);
+  if (!file.is_open() || !file.good()) {
+    return false;
+  }
+
+  uint32_t version = 0;
+
+  return Write(file, version);
 }
 
 const char *Chunk::GetTypeDescription(Type type)
@@ -141,6 +195,8 @@ const char *Chunk::GetTypeDescription(Type type)
     return "Padding";
   case TYPE_MxOb:
     return "Streamable Object";
+  case TYPE_MxDa:
+    return "Data";
   }
 
   return "Unknown";

@@ -78,6 +78,7 @@ void WriteString(std::ofstream &os, const std::string &d)
     const char *s = &d[0];
     while ((*s) != 0) {
       os.write(s, 1);
+      s++;
     }
   }
 
@@ -186,15 +187,19 @@ void MxOf::Write(std::ofstream &os, const DataMap &data, uint32_t version)
 
 void pad_::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size)
 {
+  data["Size"] = size;
   is.seekg(size, std::ios::cur);
 }
 
-void pad_::WritePadding(std::ofstream &os, size_t size)
+void pad_::Write(std::ofstream &os, const DataMap &data, uint32_t version)
 {
-  bytearray b;
-  b.resize(size);
-  b.fill(0xCD);
-  WriteBytes(os, b);
+  uint32_t sz = data.at("Size").toU32();
+  if (sz > 0) {
+    bytearray b;
+    b.resize(sz);
+    b.fill(0xCD);
+    WriteBytes(os, b);
+  }
 }
 
 const char *MxOb::GetTypeName(Type type)

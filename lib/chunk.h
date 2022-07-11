@@ -24,15 +24,19 @@ public:
     TYPE_MxCh = 0x6843784d,
     TYPE_MxOf = 0x664f784d,
     TYPE_MxOb = 0x624f784d,
+    TYPE_MxDa = 0x6144784d,
     TYPE_pad_ = 0x20646170
   };
 
-  LIBWEAVER_EXPORT Chunk();
+  LIBWEAVER_EXPORT Chunk(uint32_t id = 0);
   virtual LIBWEAVER_EXPORT ~Chunk();
 
   LIBWEAVER_EXPORT bool Read(const std::string &f);
   LIBWEAVER_EXPORT bool Read(const char *f);
   LIBWEAVER_EXPORT void Clear();
+
+  LIBWEAVER_EXPORT bool Write(const std::string &f);
+  LIBWEAVER_EXPORT bool Write(const char *f);
 
   LIBWEAVER_EXPORT Type type() const { return static_cast<Type>(id_); }
   LIBWEAVER_EXPORT const uint32_t &id() const { return id_; }
@@ -52,6 +56,7 @@ public:
 
 private:
   bool Read(std::ifstream &f, uint32_t &version, uint32_t &alignment);
+  bool Write(std::ofstream &f, const uint32_t &version) const;
 
   static RIFF *GetReaderFromType(Type type);
 

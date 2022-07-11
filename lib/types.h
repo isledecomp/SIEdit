@@ -26,6 +26,10 @@ class bytearray : public std::vector<char>
 {
 public:
   bytearray(){}
+  bytearray(size_t size)
+  {
+    resize(size);
+  }
 
   template <typename T>
   T *cast() { return reinterpret_cast<T*>(data()); }
