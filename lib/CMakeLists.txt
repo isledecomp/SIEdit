@@ -6,8 +6,14 @@ set(LIBWEAVER_SOURCES
   common.h
   core.cpp
   core.h
+  interleaf.cpp
+  interleaf.h
+  object.cpp
+  object.h
   sitypes.cpp
   sitypes.h
+  stream.cpp
+  stream.h
   types.h
 )
 
