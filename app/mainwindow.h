@@ -52,6 +52,8 @@ private slots:
   //bool SaveFile();
   //bool SaveFileAs();
 
+  void ExportFile();
+
   void SelectionChanged(const QModelIndex &index);
 
   void ShowContextMenu(const QPoint &p);

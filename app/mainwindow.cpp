@@ -96,6 +96,7 @@ void MainWindow::InitializeMenuBar()
   file_menu->addSeparator();
 
   auto export_action = file_menu->addAction(tr("&Export"));
+  connect(export_action, &QAction::triggered, this, &MainWindow::ExportFile);
 
   file_menu->addSeparator();
 
@@ -123,6 +124,12 @@ void MainWindow::ExtractObject(si::Object *obj)
   if (filename.isEmpty()) {
     filename = QString::fromStdString(obj->name());
     filename.append(QStringLiteral(".bin"));
+  } else {
+    // Strip off directory
+    int index = filename.lastIndexOf('\\');
+    if (index != -1) {
+      filename = filename.mid(index+1);
+    }
   }
 
   QString s = QFileDialog::getSaveFileName(this, tr("Export Object"), filename);
@@ -144,6 +151,21 @@ void MainWindow::OpenFile()
   if (!s.isEmpty()) {
     OpenFilename(s);
   }
+}
+
+void MainWindow::ExportFile()
+{
+  Chunk *c = interleaf_.Export();
+  SIViewDialog d(SIViewDialog::Export, c, this);
+  if (d.exec() == QDialog::Accepted) {
+    QString s = QFileDialog::getSaveFileName(this);
+    if (!s.isEmpty()) {
+      if (!c->Write(s.toStdString())) {
+        QMessageBox::critical(this, QString(), tr("Failed to write SI file."));
+      }
+    }
+  }
+  delete c;
 }
 
 void MainWindow::SelectionChanged(const QModelIndex &index)
