@@ -10,7 +10,7 @@ namespace si {
 class Object : public Core
 {
 public:
-  using ChunkedData = std::vector<bytearray>;
+  typedef std::vector<bytearray> ChunkedData;
 
   Object();
 

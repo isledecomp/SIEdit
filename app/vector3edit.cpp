@@ -1,5 +1,6 @@
 #include "vector3edit.h"
 
+#include <float.h>
 #include <QHBoxLayout>
 #include <QLabel>
 

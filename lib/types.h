@@ -1,6 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <cstring>
 #include <map>
 #include <string>
 #include <vector>
@@ -24,7 +25,7 @@ namespace si {
 class bytearray : public std::vector<char>
 {
 public:
-  bytearray() = default;
+  bytearray(){}
 
   template <typename T>
   T *cast() { return reinterpret_cast<T*>(data()); }
@@ -138,7 +139,7 @@ private:
 
 };
 
-using DataMap = std::map<std::string, Data>;
+typedef std::map<std::string, Data> DataMap;
 
 }
 

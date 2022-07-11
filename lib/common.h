@@ -7,7 +7,11 @@
 #define LIBWEAVER_PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
 #endif
 
+#ifdef _MSC_VER
 #define LIBWEAVER_EXPORT __declspec(dllexport)
+#else
+#define LIBWEAVER_EXPORT
+#endif
 
 #if defined(_WIN32)
 #define LIBWEAVER_OS_WINDOWS

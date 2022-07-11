@@ -1,5 +1,7 @@
 #include "core.h"
 
+#include <algorithm>
+
 namespace si {
 
 Core::Core()

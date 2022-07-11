@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "common.h"
+#include "types.h"
 
 namespace si {
 

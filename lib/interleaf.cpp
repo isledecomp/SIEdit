@@ -74,11 +74,11 @@ bool Interleaf::ParseStream(Chunk *chunk)
 
   Chunk *list = static_cast<Chunk*>(chunk->GetChildAt(1));
   if (list) {
-    using ChunkMap = std::map<uint32_t, std::vector<bytearray> >;
+    typedef std::map<uint32_t, Object::ChunkedData> ChunkMap;
     ChunkMap data;
 
-    for (Core *chunk : list->GetChildren()) {
-      Chunk *mxch = static_cast<Chunk*>(chunk);
+    for (Children::const_iterator it=list->GetChildren().begin(); it!=list->GetChildren().end(); it++) {
+      Chunk *mxch = static_cast<Chunk*>(*it);
       if (mxch->id() == Chunk::TYPE_pad_) {
         // Ignore this chunk
       } else if (mxch->id() == Chunk::TYPE_MxCh) {
