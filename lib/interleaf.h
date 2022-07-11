@@ -12,6 +12,7 @@ public:
   LIBWEAVER_EXPORT Interleaf();
 
   LIBWEAVER_EXPORT bool Parse(Chunk *riff);
+  LIBWEAVER_EXPORT Chunk *Export() const;
 
 private:
   bool ParseStream(Chunk *chunk);

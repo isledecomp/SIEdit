@@ -65,7 +65,7 @@ void Core::DeleteChildren()
   }
 }
 
-size_t Core::IndexOfChild(Core *chunk)
+size_t Core::IndexOfChild(Core *chunk) const
 {
   return std::find(children_.begin(), children_.end(), chunk) - children_.begin();
 }

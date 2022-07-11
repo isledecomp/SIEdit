@@ -21,11 +21,12 @@ public:
 
   bool FindParent(Core *p) const;
 
-  LIBWEAVER_EXPORT void AppendChild(Core *Core);
-  LIBWEAVER_EXPORT bool RemoveChild(Core *Core);
-  LIBWEAVER_EXPORT size_t IndexOfChild(Core *Core);
-  LIBWEAVER_EXPORT void InsertChild(size_t index, Core *Core);
-  LIBWEAVER_EXPORT Core *RemoveChild(size_t index);
+  void AppendChild(Core *Core);
+  bool RemoveChild(Core *Core);
+  void InsertChild(size_t index, Core *Core);
+  Core *RemoveChild(size_t index);
+
+  LIBWEAVER_EXPORT size_t IndexOfChild(Core *Core) const;
   LIBWEAVER_EXPORT Core *GetChildAt(size_t index) const { return children_.at(index); }
   LIBWEAVER_EXPORT size_t GetChildCount() const { return children_.size(); }
   LIBWEAVER_EXPORT bool HasChildren() const { return !children_.empty(); }

@@ -1,10 +1,13 @@
 #include "object.h"
 
+#include <iostream>
+
 namespace si {
 
 Object::Object()
 {
-
+  type_ = MxOb::Null;
+  id_ = 0;
 }
 
 bool Object::Parse(Chunk *chunk)
@@ -45,6 +48,46 @@ bool Object::Parse(Chunk *chunk)
   }
 
   return true;
+}
+
+Chunk *Object::Export() const
+{
+  Chunk *chunk = new Chunk(Chunk::TYPE_MxOb);
+
+  chunk->data("Type") = type_;
+  chunk->data("Presenter") = presenter_;
+  chunk->data("Unknown1") = unknown1_;
+  chunk->data("Name") = name_;
+  chunk->data("ID") = id_;
+  chunk->data("Flags") = flags_;
+  chunk->data("Unknown4") = unknown4_;
+  chunk->data("Duration") = duration_;
+  chunk->data("Loops") = loops_;
+  chunk->data("Position") = position_;
+  chunk->data("Direction") = direction_;
+  chunk->data("Up") = up_;
+  chunk->data("ExtraData") = extra_;
+  chunk->data("FileName") = filename_;
+  chunk->data("Unknown26") = unknown26_;
+  chunk->data("Unknown27") = unknown27_;
+  chunk->data("Unknown28") = unknown28_;
+  chunk->data("FileType") = filetype_;
+  chunk->data("Unknown29") = unknown29_;
+  chunk->data("Unknown30") = unknown30_;
+  chunk->data("Unknown31") = unknown31_;
+
+  if (HasChildren()) {
+    Chunk *list = new Chunk(Chunk::TYPE_LIST);
+    list->data("Format") = Chunk::TYPE_MxCh;
+    chunk->AppendChild(list);
+
+    for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
+      Object *child = static_cast<Object*>(*it);
+      list->AppendChild(child->Export());
+    }
+  }
+
+  return chunk;
 }
 
 bytearray Object::GetNormalizedData() const

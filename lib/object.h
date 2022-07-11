@@ -15,6 +15,8 @@ public:
   Object();
 
   bool Parse(Chunk *chunk);
+  Chunk *Export() const;
+
   void SetChunkedData(const ChunkedData &cd) { data_ = cd; }
 
   LIBWEAVER_EXPORT bytearray GetNormalizedData() const;
@@ -27,6 +29,7 @@ public:
   LIBWEAVER_EXPORT bytearray GetFileBody() const;
   LIBWEAVER_EXPORT size_t GetFileBodySize() const;
 
+  const MxOb::Type &type() const { return type_; }
   const MxOb::FileType &filetype() const { return filetype_; }
   const uint32_t &id() const { return id_; }
   const std::string &name() const { return name_; }
