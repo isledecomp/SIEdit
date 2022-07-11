@@ -26,7 +26,11 @@ QVariant ObjectModel::data(const QModelIndex &index, int role) const
     switch (index.column()) {
     case kColIndex:
       if (Object *o = dynamic_cast<Object*>(c)) {
-        return QString::number(o->id());
+        if (!index.parent().isValid()) {
+          return tr("%1:%2").arg(QString::number(index.row()), QString::number(o->id()));
+        } else {
+          return QString::number(o->id());
+        }
       }
       //return index.row();
       break;
