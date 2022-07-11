@@ -4,28 +4,28 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 set(PROJECT_SOURCES
-  panels/mxch.cpp
-  panels/mxch.h
-  panels/mxhd.cpp
-  panels/mxhd.h
-  panels/mxob.cpp
-  panels/mxob.h
-  panels/mxof.cpp
-  panels/mxof.h
-  panels/panel.cpp
-  panels/panel.h
-  panels/riff.cpp
-  panels/riff.h
+  siview/chunkmodel.cpp
+  siview/chunkmodel.h
+  siview/panels/mxch.cpp
+  siview/panels/mxch.h
+  siview/panels/mxhd.cpp
+  siview/panels/mxhd.h
+  siview/panels/mxob.cpp
+  siview/panels/mxob.h
+  siview/panels/mxof.cpp
+  siview/panels/mxof.h
+  siview/panels/riff.cpp
+  siview/panels/riff.h
+  siview/siview.cpp
+  siview/siview.h
 
-  abstractsiitemmodel.cpp
-  abstractsiitemmodel.h
-  chunkmodel.cpp
-  chunkmodel.h
   main.cpp
   mainwindow.cpp
   mainwindow.h
-  objectmodel.cpp
-  objectmodel.h
+  #objectmodel.cpp
+  #objectmodel.h
+  panel.cpp
+  panel.h
   vector3edit.cpp
   vector3edit.h
 

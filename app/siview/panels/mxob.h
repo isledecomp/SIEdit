@@ -16,8 +16,8 @@ public:
   explicit MxObPanel(QWidget *parent = nullptr);
 
 protected:
-  virtual void OnOpeningData(si::Chunk *chunk) override;
-  virtual void OnClosingData(si::Chunk *chunk) override;
+  virtual void OnOpeningData(void *data) override;
+  virtual void OnClosingData(void *data) override;
 
 private:
   QComboBox *type_combo_;
@@ -27,7 +27,7 @@ private:
   QSpinBox *obj_id_edit_;
 
   QLineEdit* flag_edit_;
-  
+
   QSpinBox *duration_edit_;
   QSpinBox *loops_edit_;
 

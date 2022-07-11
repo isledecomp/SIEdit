@@ -1,6 +1,8 @@
 #include "objectmodel.h"
 
-#define super AbstractSIItemModel
+#include <chunk.h>
+
+#define super QAbstractItemModel
 
 using namespace si;
 
@@ -34,7 +36,7 @@ int ObjectModel::rowCount(const QModelIndex &parent) const
       return 0;
     }
 
-    return mxof->data("Offsets").size() / sizeof(u32);
+    return int(mxof->data("Offsets").size() / sizeof(u32));
   }
 }
 

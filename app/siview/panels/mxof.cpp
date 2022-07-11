@@ -1,5 +1,6 @@
 #include "mxof.h"
 
+#include <chunk.h>
 #include <QLabel>
 
 using namespace si;
@@ -24,8 +25,9 @@ MxOfPanel::MxOfPanel(QWidget *parent) :
   FinishLayout();
 }
 
-void MxOfPanel::OnOpeningData(si::Chunk *chunk)
+void MxOfPanel::OnOpeningData(void *data)
 {
+  Chunk *chunk = static_cast<Chunk*>(data);
   const Data &offsets_bytes = chunk->data("Offsets");
   const u32 *offsets = reinterpret_cast<const u32*>(offsets_bytes.data());
   size_t offset_count = offsets_bytes.size() / sizeof(u32);
@@ -39,7 +41,7 @@ void MxOfPanel::OnOpeningData(si::Chunk *chunk)
   }
 }
 
-void MxOfPanel::OnClosingData(si::Chunk *chunk)
+void MxOfPanel::OnClosingData(void *data)
 {
   list_->clear();
 }

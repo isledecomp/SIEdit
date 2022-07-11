@@ -1,5 +1,6 @@
 #include "mxob.h"
 
+#include <chunk.h>
 #include <sitypes.h>
 #include <QGroupBox>
 #include <QLabel>
@@ -125,7 +126,7 @@ MxObPanel::MxObPanel(QWidget *parent) :
   loops_edit_->setMinimum(0);
   loops_edit_->setMaximum(INT_MAX);
   layout()->addWidget(loops_edit_, row, 1);
-  
+
   row++;
 
   auto pos_grp = new QGroupBox(tr("Position"));
@@ -156,8 +157,10 @@ MxObPanel::MxObPanel(QWidget *parent) :
   FinishLayout();
 }
 
-void MxObPanel::OnOpeningData(si::Chunk *chunk)
+void MxObPanel::OnOpeningData(void *data)
 {
+  Chunk *chunk = static_cast<Chunk*>(data);
+
   type_combo_->setCurrentIndex(chunk->data("Type"));
   name_edit_->setText(QString(chunk->data("Name")));
   filename_edit_->setText(QString(chunk->data("FileName")));
@@ -178,9 +181,9 @@ void MxObPanel::OnOpeningData(si::Chunk *chunk)
   up_edit_->SetValue(chunk->data("Up"));
 }
 
-void MxObPanel::OnClosingData(si::Chunk *chunk)
+void MxObPanel::OnClosingData(void *data)
 {
-  chunk->data("Type") = type_combo_->currentIndex();
+  /*chunk->data("Type") = type_combo_->currentIndex();
 
   bool ok;
   u32 flags = flag_edit_->text().toUInt(&ok, 16);
@@ -193,7 +196,7 @@ void MxObPanel::OnClosingData(si::Chunk *chunk)
 
   chunk->data("Position") = pos_edit_->GetValue();
   chunk->data("Direction") = dir_edit_->GetValue();
-  chunk->data("Up") = up_edit_->GetValue();
+  chunk->data("Up") = up_edit_->GetValue();*/
 }
 
 void MxObPanel::FlagCheckBoxClicked(bool e)

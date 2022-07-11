@@ -1,7 +1,6 @@
 #ifndef PANEL_H
 #define PANEL_H
 
-#include <chunk.h>
 #include <QGridLayout>
 #include <QWidget>
 
@@ -11,20 +10,20 @@ class Panel : public QWidget
 public:
   explicit Panel(QWidget *parent = nullptr);
 
-  void SetData(si::Chunk *chunk);
+  void SetData(void *data);
 
 signals:
 
 protected:
-  virtual void OnOpeningData(si::Chunk *chunk){}
-  virtual void OnClosingData(si::Chunk *chunk){}
+  virtual void OnOpeningData(void *data){}
+  virtual void OnClosingData(void *data){}
 
   QGridLayout *layout() const { return layout_; }
 
   void FinishLayout();
 
 private:
-  si::Chunk *chunk_;
+  void *data_;
 
   QVBoxLayout *outer_layout_;
   QGridLayout *layout_;

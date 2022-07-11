@@ -1,11 +1,12 @@
 #include "mxhd.h"
 
+#include <chunk.h>
 #include <QLabel>
 
 using namespace si;
 
-MxHdPanel::MxHdPanel(QWidget *parent)
-  : Panel{parent}
+MxHdPanel::MxHdPanel(QWidget *parent) :
+  Panel{parent}
 {
   int row = 0;
 
@@ -47,8 +48,9 @@ MxHdPanel::MxHdPanel(QWidget *parent)
   FinishLayout();
 }
 
-void MxHdPanel::OnOpeningData(Chunk *chunk)
+void MxHdPanel::OnOpeningData(void *data)
 {
+  Chunk *chunk = static_cast<Chunk*>(data);
   si::u32 version = chunk->data("Version");
   uint16_t major_ver = version >> 16;
   uint16_t minor_ver = version;
@@ -59,9 +61,9 @@ void MxHdPanel::OnOpeningData(Chunk *chunk)
   buffer_count_edit_->setValue(chunk->data("BufferCount"));
 }
 
-void MxHdPanel::OnClosingData(Chunk *chunk)
+void MxHdPanel::OnClosingData(void *data)
 {
-  chunk->data("Version") = (major_version_edit_->value() << 16 | (minor_version_edit_->value() & 0xFFFF));
+  /*chunk->data("Version") = (major_version_edit_->value() << 16 | (minor_version_edit_->value() & 0xFFFF));
   chunk->data("BufferSize") = buffer_alignment_edit_->value();
-  chunk->data("BufferCount") = buffer_count_edit_->value();
+  chunk->data("BufferCount") = buffer_count_edit_->value();*/
 }

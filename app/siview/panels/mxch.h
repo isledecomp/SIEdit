@@ -15,15 +15,14 @@ public:
   explicit MxChPanel(QWidget *parent = nullptr);
 
 protected:
-  virtual void OnOpeningData(si::Chunk *chunk) override;
-  virtual void OnClosingData(si::Chunk *chunk) override;
+  virtual void OnOpeningData(void *data) override;
+  virtual void OnClosingData(void *data) override;
 
 private:
   QLineEdit *flag_edit_;
   QSpinBox *obj_edit_;
   QSpinBox *ms_offset_edit_;
   QSpinBox *data_sz_edit_;
-  QTextEdit *data_edit_;
 
   QVector<QCheckBox*> flag_checkboxes_;
 

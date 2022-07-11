@@ -3,7 +3,11 @@
 #include <iostream>
 #include <QFileDialog>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QSplitter>
+
+#include "interleaf.h"
+#include "siview/siview.h"
 
 using namespace si;
 
@@ -15,41 +19,18 @@ MainWindow::MainWindow(QWidget *parent) :
   splitter->setChildrenCollapsible(false);
   this->setCentralWidget(splitter);
 
-  auto tree_tab = new QTabWidget();
-  splitter->addWidget(tree_tab);
-
-  /*auto simple_tree = new QTreeView();
-  simple_tree->setModel(&object_model_);
-  tree_tab->addTab(simple_tree, tr("Simple"));
-  connect(simple_tree->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);*/
-
-  lowlevel_tree_ = new QTreeView();
-  lowlevel_tree_->setModel(&chunk_model_);
-  lowlevel_tree_->setContextMenuPolicy(Qt::CustomContextMenu);
-  tree_tab->addTab(lowlevel_tree_, tr("Advanced"));
-  connect(lowlevel_tree_->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);
-  connect(lowlevel_tree_, &QTreeView::customContextMenuRequested, this, &MainWindow::ShowContextMenu);
+  tree_ = new QTreeView();
+  //tree_->setModel(&chunk_model_);
+  tree_->setContextMenuPolicy(Qt::CustomContextMenu);
+  connect(tree_->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);
+  connect(tree_, &QTreeView::customContextMenuRequested, this, &MainWindow::ShowContextMenu);
+  splitter->addWidget(tree_);
 
   config_stack_ = new QStackedWidget();
   splitter->addWidget(config_stack_);
 
   panel_blank_ = new Panel();
   config_stack_->addWidget(panel_blank_);
-
-  panel_mxhd_ = new MxHdPanel();
-  config_stack_->addWidget(panel_mxhd_);
-
-  panel_riff_ = new RIFFPanel();
-  config_stack_->addWidget(panel_riff_);
-
-  panel_mxch_ = new MxChPanel();
-  config_stack_->addWidget(panel_mxch_);
-
-  panel_mxof_ = new MxOfPanel();
-  config_stack_->addWidget(panel_mxof_);
-
-  panel_mxob_ = new MxObPanel();
-  config_stack_->addWidget(panel_mxob_);
 
   InitializeMenuBar();
 
@@ -58,12 +39,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::OpenFilename(const QString &s)
 {
-  object_model_.SetChunk(nullptr);
-  chunk_model_.SetChunk(nullptr);
-  SetPanel(panel_blank_, nullptr);
-  chunk_.Read(s.toStdString());
-  object_model_.SetChunk(&chunk_);
-  chunk_model_.SetChunk(&chunk_);
+  Chunk si;
+  if (si.Read(s.toStdString())) {
+    SIViewDialog d(SIViewDialog::Import, &si, this);
+    if (d.exec() == QDialog::Accepted) {
+      Interleaf interleaf;
+      interleaf.Parse(&si);
+    }
+  } else {
+    QMessageBox::critical(this, QString(), tr("Failed to load Interleaf file."));
+  }
 }
 
 void MainWindow::InitializeMenuBar()
@@ -72,10 +57,16 @@ void MainWindow::InitializeMenuBar()
 
   auto file_menu = menubar->addMenu(tr("&File"));
 
+  auto new_action = file_menu->addAction(tr("&New"));
+
   auto open_action = file_menu->addAction(tr("&Open"), this, &MainWindow::OpenFile, tr("Ctrl+O"));
 
   auto save_action = file_menu->addAction(tr("&Save"));
   auto save_as_action = file_menu->addAction(tr("Save &As"));
+
+  file_menu->addSeparator();
+
+  auto export_action = file_menu->addAction(tr("&Export"));
 
   file_menu->addSeparator();
 
@@ -109,27 +100,7 @@ void MainWindow::SelectionChanged(const QModelIndex &index)
   Chunk *c = static_cast<Chunk*>(index.internalPointer());
 
   if (c) {
-    switch (c->type()) {
-    case Chunk::TYPE_MxHd:
-      p = panel_mxhd_;
-      break;
-    case Chunk::TYPE_RIFF:
-    case Chunk::TYPE_LIST:
-      p = panel_riff_;
-      break;
-    case Chunk::TYPE_MxCh:
-      p = panel_mxch_;
-      break;
-    case Chunk::TYPE_MxOf:
-      p = panel_mxof_;
-      break;
-    case Chunk::TYPE_MxOb:
-      p = panel_mxob_;
-      break;
-    case Chunk::TYPE_MxSt:
-    case Chunk::TYPE_pad_:
-      break;
-    }
+    // HECK
   }
 
   if (p != config_stack_->currentWidget() || c != last_set_data_) {
@@ -149,7 +120,7 @@ void MainWindow::ShowContextMenu(const QPoint &p)
 
 void MainWindow::ExtractSelectedItems()
 {
-  auto selected = lowlevel_tree_->selectionModel()->selectedRows();
+  auto selected = tree_->selectionModel()->selectedRows();
   if (selected.empty()) {
     return;
   }

@@ -2,7 +2,7 @@
 
 Panel::Panel(QWidget *parent) :
   QWidget{parent},
-  chunk_(nullptr)
+  data_(nullptr)
 {
   outer_layout_ = new QVBoxLayout(this);
 
@@ -10,16 +10,16 @@ Panel::Panel(QWidget *parent) :
   outer_layout_->addLayout(layout_);
 }
 
-void Panel::SetData(si::Chunk *chunk)
+void Panel::SetData(void *data)
 {
-  if (chunk_) {
-    OnClosingData(chunk_);
+  if (data_) {
+    OnClosingData(data_);
   }
 
-  chunk_ = chunk;
+  data_ = data;
 
-  if (chunk_) {
-    OnOpeningData(chunk_);
+  if (data_) {
+    OnOpeningData(data_);
   }
 }
 

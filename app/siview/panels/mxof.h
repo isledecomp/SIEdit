@@ -14,8 +14,8 @@ public:
   explicit MxOfPanel(QWidget *parent = nullptr);
 
 protected:
-  virtual void OnOpeningData(si::Chunk *chunk) override;
-  virtual void OnClosingData(si::Chunk *chunk) override;
+  virtual void OnOpeningData(void *data) override;
+  virtual void OnClosingData(void *data) override;
 
 private:
   QSpinBox *obj_count_edit_;
