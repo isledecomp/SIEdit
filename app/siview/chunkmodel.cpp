@@ -2,13 +2,12 @@
 
 #include <iostream>
 
-#define super QAbstractItemModel
+#define super Model
 
 using namespace si;
 
 ChunkModel::ChunkModel(QObject *parent) :
-  super{parent},
-  chunk_(nullptr)
+  super{parent}
 {
 }
 
@@ -17,50 +16,9 @@ int ChunkModel::columnCount(const QModelIndex &parent) const
   return kColCount;
 }
 
-QModelIndex ChunkModel::index(int row, int column, const QModelIndex &parent) const
-{
-  Chunk *c = GetChunkFromIndex(parent);
-  if (!c) {
-    return QModelIndex();
-  }
-
-  return createIndex(row, column, c->GetChildAt(row));
-}
-
-QModelIndex ChunkModel::parent(const QModelIndex &index) const
-{
-  Chunk *child = GetChunkFromIndex(index);
-  if (!child) {
-    return QModelIndex();
-  }
-
-  Core *parent = child->GetParent();
-  if (!parent) {
-    return QModelIndex();
-  }
-
-  Core *grandparent = parent->GetParent();
-  if (!grandparent) {
-    return QModelIndex();
-  }
-
-  size_t row = grandparent->IndexOfChild(parent);
-  return createIndex(int(row), 0, parent);
-}
-
-int ChunkModel::rowCount(const QModelIndex &parent) const
-{
-  Chunk *c = GetChunkFromIndex(parent);
-  if (!c) {
-    return 0;
-  }
-
-  return int(c->GetChildCount());
-}
-
 QVariant ChunkModel::data(const QModelIndex &index, int role) const
 {
-  Chunk *c = GetChunkFromIndex(index);
+  Chunk *c = static_cast<Chunk*>(GetCoreFromIndex(index));
   if (!c) {
     return QVariant();
   }
@@ -107,20 +65,4 @@ QVariant ChunkModel::headerData(int section, Qt::Orientation orientation, int ro
   }
 
   return super::headerData(section, orientation, role);
-}
-
-void ChunkModel::SetChunk(si::Chunk *c)
-{
-  beginResetModel();
-  chunk_ = c;
-  endResetModel();
-}
-
-si::Chunk *ChunkModel::GetChunkFromIndex(const QModelIndex &index) const
-{
-  if (!index.isValid()) {
-    return chunk_;
-  } else {
-    return static_cast<Chunk*>(index.internalPointer());
-  }
 }

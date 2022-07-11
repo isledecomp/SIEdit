@@ -10,6 +10,7 @@ class Panel : public QWidget
 public:
   explicit Panel(QWidget *parent = nullptr);
 
+  void *GetData() const { return data_; }
   void SetData(void *data);
 
 signals:

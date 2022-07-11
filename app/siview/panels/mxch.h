@@ -3,6 +3,7 @@
 
 #include <QCheckBox>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QSpinBox>
 #include <QTextEdit>
 
@@ -23,11 +24,15 @@ private:
   QSpinBox *obj_edit_;
   QSpinBox *ms_offset_edit_;
   QSpinBox *data_sz_edit_;
+  QTextEdit *data_edit_;
+  QPushButton *show_data_btn_;
 
   QVector<QCheckBox*> flag_checkboxes_;
 
 private slots:
   void FlagCheckBoxClicked(bool e);
+
+  void ShowDataField();
 
 };
 

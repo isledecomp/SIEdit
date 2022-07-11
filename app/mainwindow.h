@@ -1,12 +1,17 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <chunk.h>
+#include <interleaf.h>
+#include <object.h>
+#include <QGroupBox>
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <QTreeView>
 
+#include "objectmodel.h"
 #include "panel.h"
+#include "viewer/bitmappanel.h"
+#include "viewer/wavpanel.h"
 
 class MainWindow : public QMainWindow
 {
@@ -23,15 +28,24 @@ private:
 
   void InitializeMenuBar();
 
-  void SetPanel(Panel *panel, si::Chunk *chunk);
+  void SetPanel(Panel *panel, si::Object *chunk);
+
+  void ExtractObject(si::Object *obj);
 
   QStackedWidget *config_stack_;
 
   QTreeView *tree_;
 
-  Panel *panel_blank_;
+  QGroupBox *action_grp_;
 
-  si::Chunk *last_set_data_;
+  Panel *panel_blank_;
+  WavPanel *panel_wav_;
+  BitmapPanel *panel_bmp_;
+
+  ObjectModel model_;
+  si::Interleaf interleaf_;
+
+  si::Object *last_set_data_;
 
 private slots:
   void OpenFile();
@@ -43,6 +57,8 @@ private slots:
   void ShowContextMenu(const QPoint &p);
 
   void ExtractSelectedItems();
+
+  void ExtractClicked();
 
 };
 

@@ -6,7 +6,6 @@
 #include <QMessageBox>
 #include <QSplitter>
 
-#include "interleaf.h"
 #include "siview/siview.h"
 
 using namespace si;
@@ -20,17 +19,44 @@ MainWindow::MainWindow(QWidget *parent) :
   this->setCentralWidget(splitter);
 
   tree_ = new QTreeView();
-  //tree_->setModel(&chunk_model_);
+  tree_->setModel(&model_);
   tree_->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(tree_->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::SelectionChanged);
   connect(tree_, &QTreeView::customContextMenuRequested, this, &MainWindow::ShowContextMenu);
   splitter->addWidget(tree_);
 
+  auto config_area = new QWidget();
+  splitter->addWidget(config_area);
+
+  auto config_layout = new QVBoxLayout(config_area);
+
+  action_grp_ = new QGroupBox();
+  config_layout->addWidget(action_grp_);
+
+  auto action_layout = new QHBoxLayout(action_grp_);
+
+  action_layout->addStretch();
+
+  auto extract_btn = new QPushButton(tr("Extract"));
+  action_layout->addWidget(extract_btn);
+  connect(extract_btn, &QPushButton::clicked, this, &MainWindow::ExtractClicked);
+
+  auto replace_btn = new QPushButton(tr("Replace"));
+  action_layout->addWidget(replace_btn);
+
+  action_layout->addStretch();
+
   config_stack_ = new QStackedWidget();
-  splitter->addWidget(config_stack_);
+  config_layout->addWidget(config_stack_);
 
   panel_blank_ = new Panel();
   config_stack_->addWidget(panel_blank_);
+
+  panel_wav_ = new WavPanel();
+  config_stack_->addWidget(panel_wav_);
+
+  panel_bmp_ = new BitmapPanel();
+  config_stack_->addWidget(panel_bmp_);
 
   InitializeMenuBar();
 
@@ -43,8 +69,9 @@ void MainWindow::OpenFilename(const QString &s)
   if (si.Read(s.toStdString())) {
     SIViewDialog d(SIViewDialog::Import, &si, this);
     if (d.exec() == QDialog::Accepted) {
-      Interleaf interleaf;
-      interleaf.Parse(&si);
+      model_.SetCore(nullptr);
+      interleaf_.Parse(&si);
+      model_.SetCore(&interleaf_);
     }
   } else {
     QMessageBox::critical(this, QString(), tr("Failed to load Interleaf file."));
@@ -76,7 +103,7 @@ void MainWindow::InitializeMenuBar()
   setMenuBar(menubar);
 }
 
-void MainWindow::SetPanel(Panel *panel, si::Chunk *chunk)
+void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
 {
   auto current = static_cast<Panel*>(config_stack_->currentWidget());
   current->SetData(nullptr);
@@ -84,6 +111,28 @@ void MainWindow::SetPanel(Panel *panel, si::Chunk *chunk)
   config_stack_->setCurrentWidget(panel);
   panel->SetData(chunk);
   last_set_data_ = chunk;
+
+  action_grp_->setEnabled(chunk);
+}
+
+void MainWindow::ExtractObject(si::Object *obj)
+{
+  QString filename = QString::fromStdString(obj->filename());
+  if (filename.isEmpty()) {
+    filename = QString::fromStdString(obj->name());
+    filename.append(QStringLiteral(".bin"));
+  }
+
+  QString s = QFileDialog::getSaveFileName(this, tr("Export Object"), filename);
+  if (!s.isEmpty()) {
+    QFile f(s);
+    if (f.open(QFile::WriteOnly)) {
+      f.write(obj->data().data(), obj->data().size());
+      f.close();
+    } else {
+      QMessageBox::critical(this, QString(), tr("Failed to write to file \"%1\".").arg(s));
+    }
+  }
 }
 
 void MainWindow::OpenFile()
@@ -97,10 +146,17 @@ void MainWindow::OpenFile()
 void MainWindow::SelectionChanged(const QModelIndex &index)
 {
   Panel *p = panel_blank_;
-  Chunk *c = static_cast<Chunk*>(index.internalPointer());
+  Object *c = dynamic_cast<Object*>(static_cast<Core*>(index.internalPointer()));
 
   if (c) {
-    // HECK
+    switch (c->filetype()) {
+    case MxOb::WAV:
+      p = panel_wav_;
+      break;
+    case MxOb::STL:
+      p = panel_bmp_;
+      break;
+    }
   }
 
   if (p != config_stack_->currentWidget() || c != last_set_data_) {
@@ -126,21 +182,13 @@ void MainWindow::ExtractSelectedItems()
   }
 
   for (const QModelIndex &i : selected) {
-    if (Chunk *chunk = static_cast<Chunk*>(i.internalPointer())) {
-      QString filename(chunk->data("FileName"));
-      if (filename.isEmpty()) {
-        filename = QString(chunk->data("Name"));
-        filename.append(QStringLiteral(".bin"));
-      }
-      if (filename.isEmpty()) {
-        filename = QStringLiteral("%1_%2.bin").arg(QString::fromLatin1((const char *) &chunk->id(), sizeof(uint32_t)),
-                                                   QString::number(chunk->offset(), 16));
-      }
-
-      QString s = QFileDialog::getSaveFileName(this, tr("Export Object"), filename);
-      if (!s.isEmpty()) {
-        //chunk->Export()
-      }
+    if (Object *obj = dynamic_cast<Object*>(static_cast<Core*>(i.internalPointer()))) {
+      ExtractObject(obj);
     }
   }
+}
+
+void MainWindow::ExtractClicked()
+{
+  ExtractObject(last_set_data_);
 }

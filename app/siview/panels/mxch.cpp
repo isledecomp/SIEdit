@@ -71,6 +71,17 @@ MxChPanel::MxChPanel(QWidget *parent) :
   data_sz_edit_->setMaximum(INT_MAX);
   layout()->addWidget(data_sz_edit_, row, 1);
 
+  row++;
+
+  show_data_btn_ = new QPushButton(tr("Show Data"));
+  connect(show_data_btn_, &QPushButton::clicked, this, &MxChPanel::ShowDataField);
+  layout()->addWidget(show_data_btn_, row, 0, 1, 2);
+
+  data_edit_ = new QTextEdit();
+  data_edit_->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+  layout()->addWidget(data_edit_, row, 0, 1, 2);
+  data_edit_->hide();
+
   FinishLayout();
 }
 
@@ -99,6 +110,10 @@ void MxChPanel::OnClosingData(void *data)
   chunk->data("Object") = u32(obj_edit_->value());
   chunk->data("Time") = u32(ms_offset_edit_->value());
   chunk->data("DataSize") = u32(data_sz_edit_->value());*/
+
+  show_data_btn_->show();
+  data_edit_->clear();
+  data_edit_->hide();
 }
 
 void MxChPanel::FlagCheckBoxClicked(bool e)
@@ -115,4 +130,16 @@ void MxChPanel::FlagCheckBoxClicked(bool e)
 
     flag_edit_->setText(QString::number(current, 16));
   }
+}
+
+void MxChPanel::ShowDataField()
+{
+  show_data_btn_->hide();
+  data_edit_->show();
+
+  Chunk *chunk = static_cast<Chunk*>(GetData());
+
+  const Data &data = chunk->data("Data");
+  QByteArray ba(data.data(), int(data.size()));
+  data_edit_->setPlainText(ba.toHex());
 }

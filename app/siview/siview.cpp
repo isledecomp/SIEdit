@@ -20,7 +20,7 @@ SIViewDialog::SIViewDialog(Mode mode, Chunk *riff, QWidget *parent) :
   layout->addWidget(splitter);
 
   auto tree = new QTreeView();
-  chunk_model_.SetChunk(riff);
+  chunk_model_.SetCore(riff);
   tree->setModel(&chunk_model_);
   tree->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(tree->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &SIViewDialog::SelectionChanged);
@@ -53,6 +53,7 @@ SIViewDialog::SIViewDialog(Mode mode, Chunk *riff, QWidget *parent) :
   btn_layout->addStretch();
 
   auto accept_btn = new QPushButton(mode == Import ? tr("De-Weave") : tr("Weave"));
+  accept_btn->setDefault(true);
   connect(accept_btn, &QPushButton::clicked, this, &SIViewDialog::accept);
   btn_layout->addWidget(accept_btn);
 
