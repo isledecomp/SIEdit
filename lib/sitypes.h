@@ -139,11 +139,11 @@ class MxOb : public RIFF
 public:
   enum Type
   {
-    /// Smacker video
-    SMK = 0x03,
+    /// Video
+    Video = 0x03,
 
-    /// WAVE audio
-    WAV = 0x04,
+    /// Audio
+    Sound = 0x04,
 
     /// World object for LegoWorldPresenter
     World = 0x06,
@@ -185,7 +185,16 @@ public:
     Unknown = 0x20,
 
     /// Total number of flags (not a real type)
-    FLAGS_COUNT
+    FLAGS_COUNT,
+  };
+
+  enum FileType
+  {
+    /// WAVE audio
+    WAV = 0x56415720,
+
+    /// Bitmap image
+    STL = 0x4C545320,
   };
 
   // FIXME: sitypes.h probably won't be part of the public API, so this should
@@ -194,6 +203,22 @@ public:
   LIBWEAVER_EXPORT static std::vector<const char*> GetFlagsName(Flags flags);
 
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
+};
+
+class WAVFormatHeader
+{
+public:
+  // Standard WAV header
+  uint16_t Format;
+  uint16_t Channels;
+  uint32_t SampleRate;
+  uint32_t ByteRate;
+  uint16_t BlockAlign;
+  uint16_t BitsPerSample;
+
+  // Mx extensions (not confirmed yet)
+  uint32_t DataSize;
+  uint32_t Flags;
 };
 
 }

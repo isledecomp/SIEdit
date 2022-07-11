@@ -111,9 +111,9 @@ void pad_::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t siz
 const char *MxOb::GetTypeName(Type type)
 {
   switch (type) {
-  case SMK:
+  case Video:
     return "SMK";
-  case WAV:
+  case Sound:
     return "WAV";
   case Presenter:
     return "MxPresenter";
@@ -193,7 +193,7 @@ void MxOb::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t siz
     data["Unknown29"] = ReadU32(is);
     data["Unknown30"] = ReadU32(is);
 
-    if (obj_type == MxOb::WAV) {
+    if (obj_type == MxOb::Sound) {
       data["Unknown31"] = ReadU32(is);
     }
   }

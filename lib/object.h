@@ -13,11 +13,15 @@ public:
   Object();
 
   bool Parse(Chunk *chunk);
+  void ProcessData(const std::vector<bytearray> &chunks);
 
-  bytearray &data()
-  {
-    return data_;
-  }
+  const MxOb::FileType &filetype() const { return filetype_; }
+  const uint32_t &id() const { return id_; }
+  const std::string &name() const { return name_; }
+  const std::string &filename() const { return filename_; }
+  bytearray &data() { return data_; }
+
+  Object *FindSubObjectWithID(uint32_t id);
 
 private:
   MxOb::Type type_;
@@ -37,7 +41,7 @@ private:
   uint32_t unknown26_;
   uint32_t unknown27_;
   uint32_t unknown28_;
-  uint32_t filetype_;
+  MxOb::FileType filetype_;
   uint32_t unknown29_;
   uint32_t unknown30_;
   uint32_t unknown31_;

@@ -12,8 +12,6 @@ set(LIBWEAVER_SOURCES
   object.h
   sitypes.cpp
   sitypes.h
-  stream.cpp
-  stream.h
   types.h
 )
 

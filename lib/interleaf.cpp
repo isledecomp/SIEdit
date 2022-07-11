@@ -1,5 +1,9 @@
 #include "interleaf.h"
 
+#include <iostream>
+
+#include "object.h"
+
 namespace si {
 
 Interleaf::Interleaf()
@@ -31,16 +35,66 @@ bool Interleaf::Parse(Chunk *riff)
     return false;
   }
 
-  const Data &offset_table = of->data("Offsets");
-  size_t offset_count = offset_table.size() / sizeof(uint32_t);
+  const Data &offset_data = of->data("Offsets");
+  const uint32_t *offset_table = reinterpret_cast<const uint32_t *>(offset_data.data());
+  size_t offset_count = offset_data.size() / sizeof(uint32_t);
   DeleteChildren();
   for (size_t i=0; i<offset_count; i++) {
-    Stream *o = new Stream();
-    Chunk *st = riff->FindChildWithOffset(offset_table[i]);
-    if (!o->Parse(st)) {
-      return false;
+    if (offset_table[i]) {
+      Chunk *st = riff->FindChildWithOffset(offset_table[i]);
+      if (!ParseStream(st)) {
+        return false;
+      }
+    } else {
+      //Object *nullobj = new Object();
+      //AppendChild(nullobj);
     }
-    AppendChild(o);
+  }
+
+  return true;
+}
+
+bool Interleaf::ParseStream(Chunk *chunk)
+{
+  if (chunk->type() != Chunk::TYPE_MxSt) {
+    return false;
+  }
+
+  Chunk *obj_chunk = static_cast<Chunk*>(chunk->GetChildAt(0));
+  if (!obj_chunk) {
+    return false;
+  }
+
+  Object *obj = new Object();
+  if (!obj->Parse(obj_chunk)) {
+    return false;
+  }
+
+  AppendChild(obj);
+
+  Chunk *list = static_cast<Chunk*>(chunk->GetChildAt(1));
+  if (list) {
+    using ChunkMap = std::map<uint32_t, std::vector<bytearray> >;
+    ChunkMap data;
+
+    for (Core *chunk : list->GetChildren()) {
+      Chunk *mxch = static_cast<Chunk*>(chunk);
+      if (mxch->id() == Chunk::TYPE_pad_) {
+        // Ignore this chunk
+      } else if (mxch->id() == Chunk::TYPE_MxCh) {
+        uint32_t obj_id = mxch->data("Object");
+        data[obj_id].push_back(mxch->data("Data"));
+      }
+    }
+
+    for (ChunkMap::const_iterator it=data.begin(); it!=data.end(); it++) {
+      Object *o = obj->FindSubObjectWithID(it->first);
+      if (o) {
+        o->ProcessData(it->second);
+      } else {
+        std::cout << "Failed to find object with ID " << it->first << std::endl;
+      }
+    }
   }
 
   return true;

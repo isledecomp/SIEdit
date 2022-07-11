@@ -32,6 +32,25 @@ public:
   template <typename T>
   const T *cast() const { return reinterpret_cast<const T*>(data()); }
 
+  void append(const char *data, size_t size)
+  {
+    size_t current = this->size();
+    this->resize(current + size);
+    memcpy(this->data() + current, data, size);
+  }
+
+  void append(const bytearray &other)
+  {
+    size_t current = this->size();
+    this->resize(current + other.size());
+    memcpy(this->data() + current, other.data(), other.size());
+  }
+
+  void fill(char c)
+  {
+    memset(this->data(), c, this->size());
+  }
+
 };
 
 class Vector3

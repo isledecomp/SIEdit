@@ -27,6 +27,7 @@ public:
   LIBWEAVER_EXPORT Core *RemoveChild(size_t index);
   LIBWEAVER_EXPORT Core *GetChildAt(size_t index) const { return children_.at(index); }
   LIBWEAVER_EXPORT size_t GetChildCount() const { return children_.size(); }
+  LIBWEAVER_EXPORT bool HasChildren() const { return !children_.empty(); }
 
 protected:
   void DeleteChildren();
