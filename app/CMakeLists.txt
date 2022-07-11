@@ -28,6 +28,8 @@ set(PROJECT_SOURCES
   objectmodel.h
   vector3edit.cpp
   vector3edit.h
+
+  res/res.rc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
