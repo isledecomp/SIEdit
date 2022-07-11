@@ -152,6 +152,24 @@ bytearray Object::ToPackedData(MxOb::FileType filetype, const ChunkedData &chunk
     *(uint32_t*)(data.data()+10) = chunks.at(0).size() + 14;
     break;
   }
+  case MxOb::FLC:
+  {
+    // First chunk is a complete FLIC header, so add it as-is
+    data.append(chunks[0]);
+
+    // Subsequent chunks are FLIC frames with an additional 20 byte header that needs to be stripped
+    const int CUSTOM_HEADER_SZ = 20;
+    for (size_t i=1; i<chunks.size(); i++) {
+      data.append(chunks.at(i).data() + CUSTOM_HEADER_SZ, chunks.at(i).size() - CUSTOM_HEADER_SZ);
+    }
+    break;
+  }
+  default:
+    std::cout << "Didn't know how to extract type '" << std::string((const char *)&filetype, sizeof(filetype)) << "', merging..." << std::endl;
+    for (size_t i=0; i<chunks.size(); i++) {
+      data.append(chunks[i]);
+    }
+    break;
   }
 
   return data;
