@@ -32,7 +32,6 @@ QVariant ObjectModel::data(const QModelIndex &index, int role) const
           return QString::number(o->id());
         }
       }
-      //return index.row();
       break;
     case kColName:
       if (Object *o = dynamic_cast<Object*>(c)) {
