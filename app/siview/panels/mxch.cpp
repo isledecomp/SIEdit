@@ -28,7 +28,7 @@ MxChPanel::MxChPanel(QWidget *parent) :
     flag_row++;
 
     auto split_chunk = new QCheckBox(tr("Split Chunk"));
-    split_chunk->setProperty("flag", 0x10);
+    split_chunk->setProperty("flag", MxCh::FLAG_SPLIT);
     connect(split_chunk, &QCheckBox::clicked, this, &MxChPanel::FlagCheckBoxClicked);
     flag_checkboxes_.append(split_chunk);
     flag_layout->addWidget(split_chunk, flag_row, 0, 1, 2);
@@ -36,7 +36,7 @@ MxChPanel::MxChPanel(QWidget *parent) :
     flag_row++;
 
     auto end_chunk = new QCheckBox(tr("End Chunk"));
-    end_chunk->setProperty("flag", 0x2);
+    end_chunk->setProperty("flag", MxCh::FLAG_END);
     connect(end_chunk, &QCheckBox::clicked, this, &MxChPanel::FlagCheckBoxClicked);
     flag_checkboxes_.append(end_chunk);
     flag_layout->addWidget(end_chunk, flag_row, 0, 1, 2);
