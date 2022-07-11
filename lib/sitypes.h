@@ -21,6 +21,7 @@ public:
   virtual ~RIFF(){}
 
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
+  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -35,6 +36,7 @@ class LIST : public RIFF
 {
 public:
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
+  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -50,6 +52,7 @@ class MxHd : public RIFF
 {
 public:
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
+  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -61,6 +64,7 @@ class MxSt : public RIFF
 {
 public:
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
+  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -78,6 +82,7 @@ class MxCh : public RIFF
 {
 public:
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
+  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -92,6 +97,7 @@ class MxOf : public RIFF
 {
 public:
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
+  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -104,6 +110,7 @@ class pad_ : public RIFF
 {
 public:
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
+  void WritePadding(std::ofstream &os, size_t size);
 };
 
 /**
@@ -203,6 +210,7 @@ public:
   LIBWEAVER_EXPORT static std::vector<const char*> GetFlagsName(Flags flags);
 
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
+  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 class WAVFormatHeader
