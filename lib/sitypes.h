@@ -20,7 +20,7 @@ class RIFF
 public:
   virtual ~RIFF(){}
 
-  virtual void Read(std::ifstream &is, DataMap &data, u32 version, u32 size);
+  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
 };
 
 /**
@@ -34,7 +34,7 @@ public:
 class LIST : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, u32 version, u32 size);
+  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
 };
 
 /**
@@ -49,7 +49,7 @@ public:
 class MxHd : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, u32 version, u32 size);
+  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
 };
 
 /**
@@ -60,7 +60,7 @@ public:
 class MxSt : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, u32 version, u32 size);
+  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
 };
 
 /**
@@ -77,7 +77,7 @@ public:
 class MxCh : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, u32 version, u32 size);
+  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
 };
 
 /**
@@ -91,7 +91,7 @@ public:
 class MxOf : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, u32 version, u32 size);
+  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
 };
 
 /**
@@ -103,7 +103,7 @@ public:
 class pad_ : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, u32 version, u32 size);
+  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
 };
 
 /**
@@ -193,7 +193,7 @@ public:
   LIBWEAVER_EXPORT static const char *GetTypeName(Type type);
   LIBWEAVER_EXPORT static std::vector<const char*> GetFlagsName(Flags flags);
 
-  virtual void Read(std::ifstream &is, DataMap &data, u32 version, u32 size);
+  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
 };
 
 }

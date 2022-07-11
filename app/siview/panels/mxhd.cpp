@@ -51,7 +51,7 @@ MxHdPanel::MxHdPanel(QWidget *parent) :
 void MxHdPanel::OnOpeningData(void *data)
 {
   Chunk *chunk = static_cast<Chunk*>(data);
-  si::u32 version = chunk->data("Version");
+  uint32_t version = chunk->data("Version");
   uint16_t major_ver = version >> 16;
   uint16_t minor_ver = version;
 

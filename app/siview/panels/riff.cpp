@@ -13,7 +13,7 @@ RIFFPanel::RIFFPanel(QWidget *parent) :
   layout()->addWidget(new QLabel(tr("ID")), row, 0);
 
   id_edit_ = new QLineEdit();
-  id_edit_->setMaxLength(sizeof(u32));
+  id_edit_->setMaxLength(sizeof(uint32_t));
   layout()->addWidget(id_edit_, row, 1);
 
   FinishLayout();
@@ -22,7 +22,7 @@ RIFFPanel::RIFFPanel(QWidget *parent) :
 void RIFFPanel::OnOpeningData(void *data)
 {
   Chunk *chunk = static_cast<Chunk*>(data);
-  QString s = QString::fromLatin1(chunk->data("Format").c_str(), sizeof(u32));
+  QString s = QString::fromLatin1(chunk->data("Format").c_str(), sizeof(uint32_t));
   id_edit_->setText(s);
 }
 

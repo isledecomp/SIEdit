@@ -46,8 +46,8 @@ public:
   LIBWEAVER_EXPORT size_t GetChildCount() const { return children_.size(); }
 
   LIBWEAVER_EXPORT Type type() const { return static_cast<Type>(id_); }
-  LIBWEAVER_EXPORT const u32 &id() const { return id_; }
-  LIBWEAVER_EXPORT const u32 &offset() const { return offset_; }
+  LIBWEAVER_EXPORT const uint32_t &id() const { return id_; }
+  LIBWEAVER_EXPORT const uint32_t &offset() const { return offset_; }
 
   LIBWEAVER_EXPORT Data &data(const std::string &key) { return data_[key]; }
   LIBWEAVER_EXPORT const Data &data(const std::string &key) const { return data_.at(key); }
@@ -59,19 +59,19 @@ public:
   }
 
   LIBWEAVER_EXPORT Chunk *FindChildWithType(Type type) const;
-  LIBWEAVER_EXPORT Chunk *FindChildWithOffset(u32 offset) const;
+  LIBWEAVER_EXPORT Chunk *FindChildWithOffset(uint32_t offset) const;
 
 private:
   // Disable copy
   Chunk(const Chunk& other);
   Chunk& operator=(const Chunk& other);
 
-  bool Read(std::ifstream &f, u32 &version, u32 &alignment);
+  bool Read(std::ifstream &f, uint32_t &version, uint32_t &alignment);
 
   static RIFF *GetReaderFromType(Type type);
 
-  u32 id_;
-  u32 offset_;
+  uint32_t id_;
+  uint32_t offset_;
   std::map<std::string, Data> data_;
 
   Chunk *parent_;

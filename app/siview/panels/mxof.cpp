@@ -29,8 +29,8 @@ void MxOfPanel::OnOpeningData(void *data)
 {
   Chunk *chunk = static_cast<Chunk*>(data);
   const Data &offsets_bytes = chunk->data("Offsets");
-  const u32 *offsets = reinterpret_cast<const u32*>(offsets_bytes.data());
-  size_t offset_count = offsets_bytes.size() / sizeof(u32);
+  const uint32_t *offsets = reinterpret_cast<const uint32_t*>(offsets_bytes.data());
+  size_t offset_count = offsets_bytes.size() / sizeof(uint32_t);
 
   obj_count_edit_->setValue(chunk->data("Count"));
 

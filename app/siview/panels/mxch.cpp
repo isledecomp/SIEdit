@@ -103,9 +103,9 @@ void MxChPanel::OnClosingData(void *data)
 
 void MxChPanel::FlagCheckBoxClicked(bool e)
 {
-  u16 flag = sender()->property("flag").toUInt();
+  uint16_t flag = sender()->property("flag").toUInt();
   bool ok;
-  u16 current = flag_edit_->text().toUShort(&ok, 16);
+  uint16_t current = flag_edit_->text().toUShort(&ok, 16);
   if (ok) {
     if (e) {
       current |= flag;

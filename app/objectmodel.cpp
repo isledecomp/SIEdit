@@ -36,13 +36,13 @@ int ObjectModel::rowCount(const QModelIndex &parent) const
       return 0;
     }
 
-    return int(mxof->data("Offsets").size() / sizeof(u32));
+    return int(mxof->data("Offsets").size() / sizeof(uint32_t));
   }
 }
 
 QVariant ObjectModel::data(const QModelIndex &index, int role) const
 {
-  u32 offset;
+  uint32_t offset;
   Chunk *c = GetItem(index.row(), &offset);
 
   switch (role) {
@@ -83,39 +83,4 @@ QVariant ObjectModel::headerData(int section, Qt::Orientation orientation, int r
   }
 
   return super::headerData(section, orientation, role);
-}
-
-Chunk *ObjectModel::GetMxOf() const
-{
-  Chunk *root = this->root();
-  if (!root) {
-    return NULL;
-  }
-
-  return root->FindChildWithType(Chunk::TYPE_MxOf);
-}
-
-Chunk *ObjectModel::GetItem(size_t index, si::u32 *offset_out) const
-{
-  Chunk *mxof = GetMxOf();
-  if (!mxof) {
-    return NULL;
-  }
-
-  const Data &offset_bytes = mxof->data("Offsets");
-  if (index >= offset_bytes.size()/sizeof(u32)) {
-    return NULL;
-  }
-
-  const u32 *offsets = reinterpret_cast<const u32*>(offset_bytes.data());
-  u32 offset = offsets[index];
-  if (offset_out) {
-    *offset_out = offset;
-  }
-
-  if (offset == 0) {
-    return NULL;
-  } else {
-    return root()->FindChildWithOffset(offset);
-  }
 }

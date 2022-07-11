@@ -201,9 +201,9 @@ void MxObPanel::OnClosingData(void *data)
 
 void MxObPanel::FlagCheckBoxClicked(bool e)
 {
-  u32 flag = sender()->property("flag").toUInt();
+  uint32_t flag = sender()->property("flag").toUInt();
   bool ok;
-  u32 current = flag_edit_->text().toUInt(&ok, 16);
+  uint32_t current = flag_edit_->text().toUInt(&ok, 16);
   if (ok) {
     if (e) {
       current |= flag;

@@ -5,18 +5,23 @@
 #include <string>
 #include <vector>
 
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+// Declare types for MSVC versions less than 2010 (1600) which lacked a stdint.h
+typedef unsigned char       uint8_t;
+typedef char                int8_t;
+typedef unsigned short      uint16_t;
+typedef short               int16_t;
+typedef unsigned int        uint32_t;
+typedef int                 int32_t;
+typedef unsigned long long  uint64_t;
+typedef long long           int64_t;
+#else
+#include <stdint.h>
+#endif
+
 namespace si {
 
-typedef unsigned char       u8;
-typedef char                s8;
-typedef unsigned short      u16;
-typedef short               s16;
-typedef unsigned int        u32;
-typedef int                 s32;
-typedef float               f32;
-typedef double              f64;
-
-class bytearray : public std::vector<s8>
+class bytearray : public std::vector<char>
 {
 public:
   bytearray() = default;
@@ -33,16 +38,16 @@ class Vector3
 {
 public:
   Vector3(){}
-  Vector3(f64 ix, f64 iy, f64 iz)
+  Vector3(double ix, double iy, double iz)
   {
     x = ix;
     y = iy;
     z = iz;
   }
 
-  f64 x;
-  f64 y;
-  f64 z;
+  double x;
+  double y;
+  double z;
 };
 
 class Data
@@ -50,11 +55,11 @@ class Data
 public:
   inline Data()
   {
-    data_.resize(sizeof(si::u32));
-    //memset(data_.data(), 0, data_.size());
+    data_.resize(sizeof(uint32_t));
+    memset(data_.data(), 0, data_.size());
   }
 
-  inline Data(const u32 &u) { set(u); }
+  inline Data(const uint32_t &u) { set(u); }
   inline Data(const Vector3 &u) { set(u); }
   inline Data(const bytearray &u) { set(u); }
   inline Data(const std::string &u)
@@ -63,26 +68,17 @@ public:
     memcpy(data_.data(), u.data(), u.size());
   }
 
-  inline operator u32() const
-  {
-    return toU32();
-  }
+  inline operator uint32_t() const { return toU32(); }
+  inline operator const char *() const { return data(); }
+  inline operator Vector3() const { return toVector3(); }
+  inline operator bytearray() const { return data_; }
+  inline operator std::string() const { return toString(); }
 
-  inline operator const char *() const
-  {
-    return data();
-  }
-
-  inline operator Vector3() const
-  {
-    return toVector3();
-  }
-
-  inline u16 toU16() const { return *data_.cast<si::u16>(); }
-  inline s16 toS16() const { return *data_.cast<si::s16>(); }
-  inline u32 toU32() const { return *data_.cast<si::u32>(); }
-  inline s32 toS32() const { return *data_.cast<si::s32>(); }
-  inline Vector3 toVector3() const { return *data_.cast<si::Vector3>(); }
+  inline uint16_t toU16() const { return *data_.cast<uint16_t>(); }
+  inline int16_t toS16() const { return *data_.cast<int16_t>(); }
+  inline uint32_t toU32() const { return *data_.cast<uint32_t>(); }
+  inline int32_t toS32() const { return *data_.cast<int32_t>(); }
+  inline Vector3 toVector3() const { return *data_.cast<Vector3>(); }
   inline const char *data() const { return data_.data(); };
   inline char *data() { return data_.data(); };
   inline const char *c_str() const { return this->data(); };
@@ -98,9 +94,9 @@ public:
     return get<int>() == u;
   }
 
-  inline bool operator==(si::u32 u) const
+  inline bool operator==(uint32_t u) const
   {
-    return get<si::u32>() == u;
+    return get<uint32_t>() == u;
   }
 
   template <typename T>

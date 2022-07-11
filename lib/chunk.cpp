@@ -32,24 +32,24 @@ bool Chunk::Read(const char *f)
     return false;
   }
 
-  u32 alignment = 0, version = 0;
+  uint32_t alignment = 0, version = 0;
 
   return Read(file, version, alignment);
 }
 
-bool Chunk::Read(std::ifstream &f, u32 &version, u32 &alignment)
+bool Chunk::Read(std::ifstream &f, uint32_t &version, uint32_t &alignment)
 {
-  u32 size;
+  uint32_t size;
 
-  offset_ = u32(f.tellg());
+  offset_ = uint32_t(f.tellg());
 
   // Read ID and size, which every chunk starts with
   f.read((char *) &id_, sizeof(id_));
   f.read((char *) &size, sizeof(size));
 
   // Store end of this chunk
-  u32 pos = u32(f.tellg());
-  u32 end = pos + size;
+  uint32_t pos = uint32_t(f.tellg());
+  uint32_t end = pos + size;
 
   // Read custom data from this chunk
   Clear();
@@ -69,8 +69,8 @@ bool Chunk::Read(std::ifstream &f, u32 &version, u32 &alignment)
   while (f.good() && (size_t(f.tellg()) + 4) < end) {
     // Check alignment, if there's not enough room to for another segment, skip ahead
     if (alignment > 0) {
-      u32 offset_in_buffer = f.tellg()%alignment;
-      if (offset_in_buffer + sizeof(u32)*2 > alignment) {
+      uint32_t offset_in_buffer = f.tellg()%alignment;
+      if (offset_in_buffer + sizeof(uint32_t)*2 > alignment) {
         f.seekg(alignment-offset_in_buffer, std::ios::cur);
       }
     }

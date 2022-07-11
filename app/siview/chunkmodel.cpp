@@ -71,7 +71,7 @@ QVariant ChunkModel::data(const QModelIndex &index, int role) const
     switch (index.column()) {
     case kColType:
       // Convert 4-byte ID to QString
-      return QString::fromLatin1(reinterpret_cast<const char *>(&c->id()), sizeof(u32));
+      return QString::fromLatin1(reinterpret_cast<const char *>(&c->id()), sizeof(uint32_t));
     case kColOffset:
       return QStringLiteral("0x%1").arg(QString::number(c->offset(), 16).toUpper());
     case kColDesc:

@@ -6,21 +6,21 @@ namespace si {
 
 Data ReadU32(std::ifstream &is)
 {
-  u32 u;
+  uint32_t u;
   is.read((char *) &u, sizeof(u));
   return u;
 }
 
 Data ReadU16(std::ifstream &is)
 {
-  u16 u;
+  uint16_t u;
   is.read((char *) &u, sizeof(u));
   return u;
 }
 
 Data ReadU8(std::ifstream &is)
 {
-  u8 u;
+  uint8_t u;
   is.read((char *) &u, sizeof(u));
   return u;
 }
@@ -61,12 +61,12 @@ Data ReadBytes(std::ifstream &is, size_t size)
   return d;
 }
 
-void RIFF::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
+void RIFF::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size)
 {
   data["Format"] = ReadU32(is);
 }
 
-void LIST::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
+void LIST::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size)
 {
   data["Format"] = ReadU32(is);
 
@@ -75,12 +75,12 @@ void LIST::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
   }
 }
 
-void MxSt::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
+void MxSt::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size)
 {
   // MxSt is a container type only and has no members, so nothing needs to be done here
 }
 
-void MxHd::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
+void MxHd::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size)
 {
   Data v = ReadU32(is);
   data["Version"] = v;
@@ -88,7 +88,7 @@ void MxHd::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
   data["BufferCount"] = ReadU32(is);
 }
 
-void MxCh::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
+void MxCh::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size)
 {
   data["Flags"] = ReadU16(is);
   data["Object"] = ReadU32(is);
@@ -97,13 +97,13 @@ void MxCh::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
   data["Data"] = ReadBytes(is, size - 0xE);
 }
 
-void MxOf::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
+void MxOf::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size)
 {
   data["Count"] = ReadU32(is);
-  data["Offsets"] = ReadBytes(is, size - sizeof(u32));
+  data["Offsets"] = ReadBytes(is, size - sizeof(uint32_t));
 }
 
-void pad_::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
+void pad_::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size)
 {
   is.seekg(size, std::ios::cur);
 }
@@ -161,7 +161,7 @@ std::vector<const char*> MxOb::GetFlagsName(Flags flags)
   return names;
 }
 
-void MxOb::Read(std::ifstream &is, DataMap &data, u32 version, u32 size)
+void MxOb::Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size)
 {
   Data obj_type = ReadU16(is);
   data["Type"] = obj_type;

@@ -133,7 +133,7 @@ void MainWindow::ExtractSelectedItems()
         filename.append(QStringLiteral(".bin"));
       }
       if (filename.isEmpty()) {
-        filename = QStringLiteral("%1_%2.bin").arg(QString::fromLatin1((const char *) &chunk->id(), sizeof(u32)),
+        filename = QStringLiteral("%1_%2.bin").arg(QString::fromLatin1((const char *) &chunk->id(), sizeof(uint32_t)),
                                                    QString::number(chunk->offset(), 16));
       }
 
