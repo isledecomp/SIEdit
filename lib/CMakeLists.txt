@@ -4,6 +4,8 @@ set(LIBWEAVER_SOURCES
   chunk.cpp
   chunk.h
   common.h
+  core.cpp
+  core.h
   sitypes.cpp
   sitypes.h
   types.h

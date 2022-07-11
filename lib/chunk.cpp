@@ -11,8 +11,6 @@ namespace si {
 Chunk::Chunk()
 {
   id_ = 0;
-
-  parent_ = NULL;
 }
 
 Chunk::~Chunk()
@@ -121,57 +119,7 @@ void Chunk::Clear()
   data_.clear();
 
   // Delete children
-  for (Children::iterator it = children_.begin(); it != children_.end(); it++) {
-    delete (*it);
-  }
-  children_.clear();
-}
-
-void Chunk::AppendChild(Chunk *chunk)
-{
-  // If this chunk has another parent, remove it from that parent
-  if (chunk->parent_) {
-    chunk->parent_->RemoveChild(chunk);
-  }
-
-  // Append it to this chunk
-  chunk->parent_ = this;
-  children_.push_back(chunk);
-}
-
-bool Chunk::RemoveChild(Chunk *chunk)
-{
-  // If this chunk's parent is not this, return
-  if (chunk->parent_ != this) {
-    return false;
-  }
-
-  // Find chunk in children, if doesn't exist, return false
-  Children::iterator it = std::find(children_.begin(), children_.end(), chunk);
-  if (it == children_.end()) {
-    return false;
-  }
-
-  chunk->parent_ = NULL;
-  children_.erase(it);
-  return true;
-}
-
-size_t Chunk::IndexOfChild(Chunk *chunk)
-{
-  return std::find(children_.begin(), children_.end(), chunk) - children_.begin();
-}
-
-void Chunk::InsertChild(size_t index, Chunk *chunk)
-{
-  // If this chunk has another parent, remove it from that parent
-  if (chunk->parent_) {
-    chunk->parent_->RemoveChild(chunk);
-  }
-
-  // Insert at position
-  chunk->parent_ = this;
-  children_.insert(children_.begin() + index, chunk);
+  DeleteChildren();
 }
 
 const char *Chunk::GetTypeDescription(Type type)
@@ -200,10 +148,11 @@ const char *Chunk::GetTypeDescription(Type type)
 
 Chunk *Chunk::FindChildWithType(Type type) const
 {
-  for (Chunk *child : children_) {
-    if (child->type() == type) {
-      return child;
-    } else if (Chunk *grandchild = child->FindChildWithType(type)) {
+  for (Core *child : GetChildren()) {
+    Chunk *chunk = static_cast<Chunk*>(child);
+    if (chunk->type() == type) {
+      return chunk;
+    } else if (Chunk *grandchild = chunk->FindChildWithType(type)) {
       return grandchild;
     }
   }
@@ -211,12 +160,13 @@ Chunk *Chunk::FindChildWithType(Type type) const
   return NULL;
 }
 
-Chunk *Chunk::FindChildWithOffset(u32 offset) const
+Chunk *Chunk::FindChildWithOffset(uint32_t offset) const
 {
-  for (Chunk *child : children_) {
-    if (child->offset() == offset) {
-      return child;
-    } else if (Chunk *grandchild = child->FindChildWithOffset(offset)) {
+  for (Core *child : GetChildren()) {
+    Chunk *chunk = static_cast<Chunk*>(child);
+    if (chunk->offset() == offset) {
+      return chunk;
+    } else if (Chunk *grandchild = chunk->FindChildWithOffset(offset)) {
       return grandchild;
     }
   }

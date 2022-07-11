@@ -6,12 +6,13 @@
 #include <memory>
 
 #include "common.h"
+#include "core.h"
 #include "sitypes.h"
 #include "types.h"
 
 namespace si {
 
-class Chunk
+class Chunk : public Core
 {
 public:
   enum Type
@@ -33,18 +34,6 @@ public:
   LIBWEAVER_EXPORT bool Read(const char *f);
   LIBWEAVER_EXPORT void Clear();
 
-  typedef std::vector<Chunk*> Children;
-
-  LIBWEAVER_EXPORT Chunk *GetParent() const { return parent_; }
-  LIBWEAVER_EXPORT const Children &GetChildren() const { return children_; }
-  LIBWEAVER_EXPORT void AppendChild(Chunk *chunk);
-  LIBWEAVER_EXPORT bool RemoveChild(Chunk *chunk);
-  LIBWEAVER_EXPORT size_t IndexOfChild(Chunk *chunk);
-  LIBWEAVER_EXPORT void InsertChild(size_t index, Chunk *chunk);
-  LIBWEAVER_EXPORT Chunk *RemoveChild(size_t index);
-  LIBWEAVER_EXPORT Chunk *GetChildAt(size_t index) const { return children_.at(index); }
-  LIBWEAVER_EXPORT size_t GetChildCount() const { return children_.size(); }
-
   LIBWEAVER_EXPORT Type type() const { return static_cast<Type>(id_); }
   LIBWEAVER_EXPORT const uint32_t &id() const { return id_; }
   LIBWEAVER_EXPORT const uint32_t &offset() const { return offset_; }
@@ -62,10 +51,6 @@ public:
   LIBWEAVER_EXPORT Chunk *FindChildWithOffset(uint32_t offset) const;
 
 private:
-  // Disable copy
-  Chunk(const Chunk& other);
-  Chunk& operator=(const Chunk& other);
-
   bool Read(std::ifstream &f, uint32_t &version, uint32_t &alignment);
 
   static RIFF *GetReaderFromType(Type type);
@@ -73,9 +58,6 @@ private:
   uint32_t id_;
   uint32_t offset_;
   std::map<std::string, Data> data_;
-
-  Chunk *parent_;
-  Children children_;
 
 };
 
