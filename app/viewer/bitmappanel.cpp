@@ -28,7 +28,8 @@ void BitmapPanel::OnOpeningData(void *data)
 {
   si::Object *o = static_cast<si::Object*>(data);
 
-  QByteArray b(o->data().data(), o->data().size());
+  si::bytearray processed = o->GetNormalizedData();
+  QByteArray b(processed.data(), processed.size());
   QBuffer buf(&b);
   QImage img;
   img.load(&buf, "BMP");

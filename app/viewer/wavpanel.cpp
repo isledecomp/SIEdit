@@ -40,20 +40,8 @@ void WavPanel::OnOpeningData(void *data)
   si::Object *o = static_cast<si::Object*>(data);
 
   // Find fmt and data
-  auto dat = o->data().data();
-  for (size_t i=0; i<o->data().size(); i++) {
-    if (!memcmp(dat+i, "fmt ", 4)) {
-      header_ = *(si::WAVFormatHeader *)(dat+i+8);
-      break;
-    }
-  }
-  for (size_t i=0; i<o->data().size(); i++) {
-    if (!memcmp(dat+i, "data", 4)) {
-      uint32_t sz = *(uint32_t*)(dat+i+4);
-      playhead_slider_->setMaximum(sz/GetSampleSize());
-      break;
-    }
-  }
+  header_ = *o->GetFileHeader().cast<si::WAVFormatHeader>();
+  playhead_slider_->setMaximum(o->GetFileBodySize()/GetSampleSize());
 }
 
 void WavPanel::OnClosingData(void *data)
@@ -71,37 +59,20 @@ void WavPanel::Play(bool e)
 {
   if (audio_out_) {
     audio_out_->stop();
-    //audio_out_->deleteLater();
     delete audio_out_;
     audio_out_ = nullptr;
   }
   buffer_.close();
+  array_.clear();
   playback_timer_->stop();
 
   if (e) {
-    const si::bytearray &lib = static_cast<si::Object*>(GetData())->data();
-    array_ = QByteArray(lib.data(), lib.size());
+    si::Object *o = static_cast<si::Object*>(GetData());
+    si::bytearray pcm = o->GetFileBody();
+    array_ = QByteArray(pcm.data(), pcm.size());
     buffer_.open(QBuffer::ReadOnly);
 
     size_t start = 0;
-    si::WAVFormatHeader header;
-
-    // Find fmt and data
-    auto dat = lib.data();
-    for (size_t i=0; i<lib.size(); i++) {
-      if (!memcmp(dat+i, "fmt ", 4)) {
-        header = *(si::WAVFormatHeader *)(dat+i+8);
-        break;
-      }
-    }
-    for (size_t i=0; i<lib.size(); i++) {
-      if (!memcmp(dat+i, "data", 4)) {
-        start = i + 8;
-        break;
-      }
-    }
-
-    buffer_start_ = start;
 
     if (playhead_slider_->value() < playhead_slider_->maximum()) {
       start += playhead_slider_->value() * GetSampleSize();
@@ -110,9 +81,9 @@ void WavPanel::Play(bool e)
     buffer_.seek(start);
 
     QAudioFormat audio_fmt;
-    audio_fmt.setSampleRate(header.SampleRate);
-    audio_fmt.setChannelCount(header.Channels);
-    audio_fmt.setSampleSize(header.BitsPerSample);
+    audio_fmt.setSampleRate(header_.SampleRate);
+    audio_fmt.setChannelCount(header_.Channels);
+    audio_fmt.setSampleSize(header_.BitsPerSample);
     audio_fmt.setByteOrder(QAudioFormat::LittleEndian);
     audio_fmt.setCodec(QStringLiteral("audio/pcm"));
     audio_fmt.setSampleType(QAudioFormat::SignedInt);
@@ -127,7 +98,7 @@ void WavPanel::Play(bool e)
 
 void WavPanel::TimerUpdate()
 {
-  playhead_slider_->setValue((buffer_.pos() - buffer_start_) / GetSampleSize());
+  playhead_slider_->setValue(buffer_.pos() / GetSampleSize());
 }
 
 void WavPanel::OutputChanged(QAudio::State state)
@@ -141,6 +112,6 @@ void WavPanel::OutputChanged(QAudio::State state)
 void WavPanel::SliderMoved(int i)
 {
   if (buffer_.isOpen()) {
-    buffer_.seek(buffer_start_ + i * GetSampleSize());
+    buffer_.seek(i * GetSampleSize());
   }
 }

@@ -61,6 +61,8 @@ MainWindow::MainWindow(QWidget *parent) :
   InitializeMenuBar();
 
   splitter->setSizes({99999, 99999});
+
+  setWindowTitle(tr("SI Editor"));
 }
 
 void MainWindow::OpenFilename(const QString &s)
@@ -127,7 +129,8 @@ void MainWindow::ExtractObject(si::Object *obj)
   if (!s.isEmpty()) {
     QFile f(s);
     if (f.open(QFile::WriteOnly)) {
-      f.write(obj->data().data(), obj->data().size());
+      bytearray b = obj->GetNormalizedData();
+      f.write(b.data(), b.size());
       f.close();
     } else {
       QMessageBox::critical(this, QString(), tr("Failed to write to file \"%1\".").arg(s));

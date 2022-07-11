@@ -47,28 +47,40 @@ bool Object::Parse(Chunk *chunk)
   return true;
 }
 
-void Object::ProcessData(const std::vector<bytearray> &chunks)
+bytearray Object::GetNormalizedData() const
 {
-  switch (filetype_) {
+  return ToPackedData(filetype(), data_);
+}
+
+void Object::SetNormalizedData(const bytearray &d)
+{
+  SetChunkedData(ToChunkedData(filetype(), d));
+}
+
+bytearray Object::ToPackedData(MxOb::FileType filetype, const ChunkedData &chunks)
+{
+  bytearray data;
+
+  switch (filetype) {
   case MxOb::WAV:
   {
     // Make space for WAVE header
-    data_.resize(0x2C);
+    data.resize(0x2C);
 
     // Merge all chunks after the first one
     for (size_t i=1; i<chunks.size(); i++) {
-      data_.append(chunks[i]);
+      data.append(chunks[i]);
     }
 
     // Copy boilerplate bytes for header
-    uint32_t *header = reinterpret_cast<uint32_t *>(data_.data());
+    uint32_t *header = reinterpret_cast<uint32_t *>(data.data());
     header[0] = Chunk::TYPE_RIFF;     // "RIFF"
-    header[1] = data_.size() - 8;     // Size of total file
+    header[1] = data.size() - 8;     // Size of total file
     header[2] = 0x45564157;           // "WAVE"
     header[3] = 0x20746D66;           // "fmt "
     header[4] = 16;                   // Size of fmt chunk
     header[9] = 0x61746164;           // "data"
-    header[10] = data_.size() - 0x2C; // Size of data chunk
+    header[10] = data.size() - 0x2C; // Size of data chunk
 
     // Copy fmt header from chunk 1
     memcpy(&header[5], chunks[0].data(), 16);
@@ -77,27 +89,77 @@ void Object::ProcessData(const std::vector<bytearray> &chunks)
   case MxOb::STL:
   {
     // Make space for BMP header
-    data_.resize(14);
+    data.resize(14);
 
     // Merge all chunks after the first one
     for (size_t i=0; i<chunks.size(); i++) {
-      data_.append(chunks[i]);
+      data.append(chunks[i]);
     }
 
     // Set BM identifier
-    *(uint16_t *)(data_.data()) = 0x4D42;
+    *(uint16_t *)(data.data()) = 0x4D42;
 
     // Set file size
-    *(uint32_t*)(data_.data()+2) = data_.size();
+    *(uint32_t*)(data.data()+2) = data.size();
 
     // Set reserved bytes
-    *(uint32_t*)(data_.data()+6) = 0;
+    *(uint32_t*)(data.data()+6) = 0;
 
     // Set offset
-    *(uint32_t*)(data_.data()+10) = chunks.at(0).size() + 14;
+    *(uint32_t*)(data.data()+10) = chunks.at(0).size() + 14;
     break;
   }
   }
+
+  return data;
+}
+
+Object::ChunkedData Object::ToChunkedData(MxOb::FileType filetype, const bytearray &chunks)
+{
+  // FIXME: STUB
+  return ChunkedData();
+}
+
+bytearray Object::GetFileHeader() const
+{
+  switch (filetype()) {
+  case MxOb::WAV:
+  case MxOb::STL:
+    return data_.at(0);
+  }
+
+  return bytearray();
+}
+
+bytearray Object::GetFileBody() const
+{
+  bytearray b;
+
+  switch (filetype()) {
+  case MxOb::WAV:
+  case MxOb::STL:
+    for (size_t i=1; i<data_.size(); i++) {
+      b.append(data_.at(i));
+    }
+    break;
+  }
+
+  return b;
+}
+
+size_t Object::GetFileBodySize() const
+{
+  size_t s = 0;
+  switch (filetype()) {
+  case MxOb::WAV:
+  case MxOb::STL:
+    for (size_t i=1; i<data_.size(); i++) {
+      s += data_.at(i).size();
+    }
+    break;
+  }
+
+  return s;
 }
 
 Object *Object::FindSubObjectWithID(uint32_t id)

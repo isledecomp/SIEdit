@@ -90,7 +90,7 @@ bool Interleaf::ParseStream(Chunk *chunk)
     for (ChunkMap::const_iterator it=data.begin(); it!=data.end(); it++) {
       Object *o = obj->FindSubObjectWithID(it->first);
       if (o) {
-        o->ProcessData(it->second);
+        o->SetChunkedData(it->second);
       } else {
         std::cout << "Failed to find object with ID " << it->first << std::endl;
       }

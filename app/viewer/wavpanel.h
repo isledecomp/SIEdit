@@ -30,9 +30,9 @@ private:
   QAudioOutput *audio_out_;
   QBuffer buffer_;
   QByteArray array_;
-  size_t buffer_start_;
   QTimer *playback_timer_;
   si::WAVFormatHeader header_;
+  QByteArray play_buffer_;
 
 private slots:
   void Play(bool e);
