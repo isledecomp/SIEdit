@@ -20,6 +20,7 @@ add_library(libweaver SHARED
 )
 
 target_compile_definitions(libweaver PRIVATE LIBWEAVER_LIBRARY)
+target_compile_options(libweaver PRIVATE -Werror -Wall -Wextra -Wno-unused-parameter)
 set_target_properties(libweaver PROPERTIES
   CXX_STANDARD 98
   CXX_STANDARD_REQUIRED ON

@@ -1,8 +1,10 @@
 #include "interleaf.h"
 
+#include <cmath>
 #include <iostream>
 
 #include "object.h"
+#include "othertypes.h"
 
 namespace si {
 
@@ -54,17 +56,6 @@ bool Interleaf::Parse(Chunk *riff)
   return true;
 }
 
-struct ChunkStatus {
-  ChunkStatus()
-  {
-    index = 0;
-    time = 0;
-  }
-
-  size_t index;
-  uint32_t time;
-};
-
 Chunk *Interleaf::Export() const
 {
   Chunk *riff = new Chunk(Chunk::TYPE_RIFF);
@@ -97,80 +88,7 @@ Chunk *Interleaf::Export() const
   riff->AppendChild(list);
 
   for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
-    Chunk *mxst = new Chunk(Chunk::TYPE_MxSt);
-    list->AppendChild(mxst);
-
-    Object *obj = static_cast<Object*>(*it);
-    Chunk *mxob = obj->Export();
-    mxst->AppendChild(mxob);
-
-    Chunk *chunklst = new Chunk(Chunk::TYPE_LIST);
-    chunklst->data("Format") = Chunk::TYPE_MxDa;
-    mxst->AppendChild(chunklst);
-
-    // First, interleave all headers (first chunk)
-    for (ssize_t i=-1; i<ssize_t(obj->GetChildCount()); i++) {
-      Object *working_obj = static_cast<Object*>((i == -1) ? obj : obj->GetChildAt(i));
-      if (!working_obj->data().empty()) {
-        const bytearray &data = working_obj->data().front();
-        Chunk *mxch = new Chunk(Chunk::TYPE_MxCh);
-        mxch->data("Flags") = 0;
-        mxch->data("Object") = working_obj->id();
-        mxch->data("Time") = 0;
-        mxch->data("DataSize") = data.size();
-        mxch->data("Data") = data;
-        chunklst->AppendChild(mxch);
-      }
-    }
-
-    // Next, interleave everything by time
-    std::vector<ChunkStatus> chunk_status(obj->GetChildCount() + 1);
-    bool all_done;
-    do {
-      all_done = true;
-      for (ssize_t i=-1; i<ssize_t(obj->GetChildCount()); i++) {
-        Object *working_obj = static_cast<Object*>((i == -1) ? obj : obj->GetChildAt(i));
-        ChunkStatus &status = chunk_status[i+1];
-
-        if (status.index < working_obj->data().size()) {
-          const bytearray &data = working_obj->data().at(status.index);
-
-          all_done = false;
-
-          Chunk *mxch = new Chunk(Chunk::TYPE_MxCh);
-          mxch->data("Flags") = 0;
-          mxch->data("Object") = working_obj->id();
-          mxch->data("Time") = status.time;
-          mxch->data("DataSize") = data.size();
-          mxch->data("Data") = data;
-          chunklst->AppendChild(mxch);
-
-          status.index++;
-
-          // Increment time
-          switch (working_obj->filetype()) {
-          case MxOb::WAV:
-            status.time += 1000;
-            break;
-          case MxOb::STL:
-            // Unaffected by time
-            break;
-          }
-        }
-      }
-    } while (!all_done);
-
-    // Finally interleave end chunks
-    for (ssize_t i=obj->GetChildCount()-1; i>=-1; i--) {
-      Object *working_obj = static_cast<Object*>((i == -1) ? obj : obj->GetChildAt(i));
-      ChunkStatus &status = chunk_status[i+1];
-      Chunk *mxch = new Chunk(Chunk::TYPE_MxCh);
-      mxch->data("Flags") = MxCh::FLAG_END;
-      mxch->data("Object") = working_obj->id();
-      mxch->data("Time") = status.time;
-      mxch->data("DataSize") = 0;
-      chunklst->AppendChild(mxch);
-    }
+    list->AppendChild(ExportStream(static_cast<Object*>(*it)));
   }
 
   // FIXME: Fill in MxOf table
@@ -242,6 +160,134 @@ bool Interleaf::ParseStream(Chunk *chunk)
   }
 
   return true;
+}
+
+struct ChunkStatus
+{
+  ChunkStatus()
+  {
+    object = NULL;
+    index = 0;
+    time = 0;
+    end_chunk = false;
+  }
+
+  Object *object;
+  size_t index;
+  uint32_t time;
+  bool end_chunk;
+};
+
+Chunk *Interleaf::ExportStream(Object *obj) const
+{
+  Chunk *mxst = new Chunk(Chunk::TYPE_MxSt);
+
+  Chunk *mxob = obj->Export();
+  mxst->AppendChild(mxob);
+
+  Chunk *chunklst = new Chunk(Chunk::TYPE_LIST);
+  chunklst->data("Format") = Chunk::TYPE_MxDa;
+  mxst->AppendChild(chunklst);
+
+  // Set up chunking status vector
+  std::vector<ChunkStatus> chunk_status(obj->GetChildCount() + 1);
+  chunk_status[0].object = obj;
+  for (size_t i=0; i<obj->GetChildCount(); i++) {
+    chunk_status[i+1].object = static_cast<Object*>(obj->GetChildAt(i));
+  }
+
+  // First, interleave all headers (first chunk)
+  for (std::vector<ChunkStatus>::iterator it=chunk_status.begin(); it!=chunk_status.end(); it++) {
+    Object *working_obj = it->object;
+    if (!working_obj->data().empty()) {
+      chunklst->AppendChild(ExportMxCh(0, working_obj->id(), 0, working_obj->data().front()));
+    }
+    it->index++;
+  }
+
+  // Next, interleave everything by time
+  while (true) {
+    // Find next chunk
+    ChunkStatus *status = NULL;
+
+    for (std::vector<ChunkStatus>::iterator it=chunk_status.begin(); it!=chunk_status.end(); it++) {
+      // Check if we've already written all these chunks
+      if (it->index >= it->object->data().size()) {
+        /*if (!it->end_chunk) {
+          chunklst->AppendChild(ExportMxCh(MxCh::FLAG_END, it->object->id(), it->time));
+          it->end_chunk = true;
+        }*/
+        continue;
+      }
+
+      // Find earliest chunk to write
+      if (!status || it->time < status->time) {
+        status = it.base();
+      }
+    }
+
+    if (!status) {
+      // Assume chunks are all done
+      break;
+    }
+
+    Object *working_obj = status->object;
+    const bytearray &data = working_obj->data().at(status->index);
+
+    chunklst->AppendChild(ExportMxCh(0, working_obj->id(), status->time, data));
+
+    status->index++;
+
+    // Increment time
+    switch (working_obj->filetype()) {
+    case MxOb::WAV:
+    {
+      const WAVFmt *fmt = working_obj->GetFileHeader().cast<WAVFmt>();
+      status->time += (data.size() * 1000) / (fmt->BitsPerSample/8) / fmt->Channels / fmt->SampleRate;
+      break;
+    }
+    case MxOb::SMK:
+    {
+      int32_t frame_rate = working_obj->GetFileHeader().cast<SMK2>()->FrameRate;
+      int32_t fps;
+      if (frame_rate > 0) {
+        fps = 1000/frame_rate;
+      } else if (frame_rate < 0) {
+        fps = 100000/-frame_rate;
+      } else {
+        fps = 10;
+      }
+      status->time += 1000/fps;
+      break;
+    }
+    case MxOb::FLC:
+      status->time += working_obj->GetFileHeader().cast<FLIC>()->speed;
+      break;
+    case MxOb::STL:
+    case MxOb::OBJ:
+      // Unaffected by time
+      break;
+    }
+  };
+
+  for (size_t i=1; i<chunk_status.size(); i++) {
+    const ChunkStatus &s = chunk_status.at(i);
+    chunklst->AppendChild(ExportMxCh(MxCh::FLAG_END, s.object->id(), s.time));
+  }
+  chunklst->AppendChild(ExportMxCh(MxCh::FLAG_END, chunk_status.front().object->id(), chunk_status.front().time));
+
+  return mxst;
+}
+
+Chunk *Interleaf::ExportMxCh(uint16_t flags, uint32_t object_id, uint32_t time, const bytearray &data) const
+{
+  Chunk *mxch = new Chunk(Chunk::TYPE_MxCh);
+  mxch->data("Flags") = flags;
+  mxch->data("Object") = object_id;
+  mxch->data("Time") = time;
+  mxch->data("DataSize") = data.size();
+  mxch->data("Data") = data;
+  return mxch;
 }
 
 }

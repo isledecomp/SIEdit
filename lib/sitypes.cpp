@@ -202,6 +202,16 @@ void pad_::Write(std::ofstream &os, const DataMap &data, uint32_t version)
   }
 }
 
+void pad_::WriteArbitraryPadding(std::ofstream &os, uint32_t size)
+{
+  uint32_t pad_id = Chunk::TYPE_pad_;
+  os.write((const char *) &pad_id, sizeof(uint32_t));
+  os.write((const char *) &size, sizeof(uint32_t));
+  bytearray b(size);
+  b.fill(0xCD);
+  WriteBytes(os, b);
+}
+
 const char *MxOb::GetTypeName(Type type)
 {
   switch (type) {
@@ -211,9 +221,9 @@ const char *MxOb::GetTypeName(Type type)
     return "WAV";
   case Presenter:
     return "MxPresenter";
-  case BMP:
+  case Bitmap:
     return "BMP";
-  case OBJ:
+  case Object:
     return "3D Object";
   case World:
     return "World";
@@ -221,6 +231,7 @@ const char *MxOb::GetTypeName(Type type)
     return "Event";
   case Animation:
     return "Animation";
+  case Null:
   case TYPE_COUNT:
     break;
   }

@@ -90,8 +90,33 @@ bool Chunk::Read(std::ifstream &f, uint32_t &version, uint32_t &alignment)
   return true;
 }
 
-bool Chunk::Write(std::ofstream &f, const uint32_t &version) const
+bool Chunk::Write(std::ofstream &f, uint32_t &version, uint32_t &alignment) const
 {
+  RIFF *writer = GetReaderFromType(type());
+
+  if (alignment != 0) {
+    // Determine if we have enough space left to write this chunk without the alignment
+    size_t expected_write = 8;
+    for (DataMap::const_iterator it=data_.begin(); it!=data_.end(); it++) {
+      expected_write += it->second.size();
+    }
+
+    size_t start_chunk = f.tellp()/alignment;
+    size_t end_chunk = (size_t(f.tellp())+expected_write)/alignment;
+    if (start_chunk != end_chunk) {
+      // This chunk is going to cross a boundary. We could write padding or split the chunk.
+      // I'm not exactly sure how Weaver decides which, but I suppose it doesn't matter.
+      size_t diff = (end_chunk * alignment) - f.tellp();
+      pad_::WriteArbitraryPadding(f, diff - 8);
+      /*if (id_ != Chunk::TYPE_MxCh || diff < 0x200) {
+        // Make padding
+        pad_::WriteArbitraryPadding(f, diff - 8);
+      } else {
+        // Attempt to split chunk
+      }*/
+    }
+  }
+
   // Write 4-byte ID
   f.write((const char *) &id_, sizeof(id_));
 
@@ -100,13 +125,19 @@ bool Chunk::Write(std::ofstream &f, const uint32_t &version) const
   std::ios::pos_type size_pos = f.tellp();
   f.write((const char *) &chunk_size, sizeof(chunk_size));
 
-  if (RIFF *writer = GetReaderFromType(type())) {
+  if (writer) {
     writer->Write(f, data_, version);
+
+    if (type() == TYPE_MxHd) {
+      version = data_.at("Version");
+      alignment = data_.at("BufferSize");
+    }
+
     delete writer;
   }
 
   for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
-    static_cast<Chunk*>(*it)->Write(f, version);
+    static_cast<Chunk*>(*it)->Write(f, version, alignment);
   }
 
   // Backtrack and write chunk size
@@ -171,9 +202,9 @@ bool Chunk::Write(const char *f)
     return false;
   }
 
-  uint32_t version = 0;
+  uint32_t version = 0, alignment = 0;
 
-  return Write(file, version);
+  return Write(file, version, alignment);
 }
 
 const char *Chunk::GetTypeDescription(Type type)
@@ -204,8 +235,8 @@ const char *Chunk::GetTypeDescription(Type type)
 
 Chunk *Chunk::FindChildWithType(Type type) const
 {
-  for (Core *child : GetChildren()) {
-    Chunk *chunk = static_cast<Chunk*>(child);
+  for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
+    Chunk *chunk = static_cast<Chunk*>(*it);
     if (chunk->type() == type) {
       return chunk;
     } else if (Chunk *grandchild = chunk->FindChildWithType(type)) {
@@ -218,8 +249,8 @@ Chunk *Chunk::FindChildWithType(Type type) const
 
 Chunk *Chunk::FindChildWithOffset(uint32_t offset) const
 {
-  for (Core *child : GetChildren()) {
-    Chunk *chunk = static_cast<Chunk*>(child);
+  for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
+    Chunk *chunk = static_cast<Chunk*>(*it);
     if (chunk->offset() == offset) {
       return chunk;
     } else if (Chunk *grandchild = chunk->FindChildWithOffset(offset)) {

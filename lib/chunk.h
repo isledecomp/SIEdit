@@ -43,7 +43,7 @@ public:
   LIBWEAVER_EXPORT const uint32_t &offset() const { return offset_; }
 
   LIBWEAVER_EXPORT Data &data(const std::string &key) { return data_[key]; }
-  LIBWEAVER_EXPORT const Data &data(const std::string &key) const { return data_.at(key); }
+  LIBWEAVER_EXPORT Data data(const std::string &key) const { return data_.at(key); }
 
   LIBWEAVER_EXPORT static const char *GetTypeDescription(Type type);
   LIBWEAVER_EXPORT const char *GetTypeDescription() const
@@ -56,13 +56,13 @@ public:
 
 private:
   bool Read(std::ifstream &f, uint32_t &version, uint32_t &alignment);
-  bool Write(std::ofstream &f, const uint32_t &version) const;
+  bool Write(std::ofstream &f, uint32_t &version, uint32_t &alignment) const;
 
   static RIFF *GetReaderFromType(Type type);
 
   uint32_t id_;
   uint32_t offset_;
-  std::map<std::string, Data> data_;
+  DataMap data_;
 
 };
 

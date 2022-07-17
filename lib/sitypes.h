@@ -26,6 +26,7 @@ public:
 
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
   virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
+
 };
 
 /**
@@ -122,6 +123,8 @@ class pad_ : public RIFF
 public:
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
   virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
+
+  static void WriteArbitraryPadding(std::ofstream &os, uint32_t size);
 };
 
 /**
@@ -180,10 +183,10 @@ public:
     Animation = 0x09,
 
     /// Bitmap image
-    BMP = 0x0A,
+    Bitmap = 0x0A,
 
     /// 3D Object
-    OBJ = 0x0B,
+    Object = 0x0B,
 
     /// Total number of types (not a real type)
     TYPE_COUNT
@@ -220,6 +223,12 @@ public:
 
     /// FLIC animation
     FLC = 0x434c4620,
+
+    /// SMK video
+    SMK = 0x4b4d5320,
+
+    /// 3D Object
+    OBJ = 0x4a424f20,
   };
 
   // FIXME: sitypes.h probably won't be part of the public API, so this should
@@ -229,22 +238,6 @@ public:
 
   virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
   virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
-};
-
-class WAVFormatHeader
-{
-public:
-  // Standard WAV header
-  uint16_t Format;
-  uint16_t Channels;
-  uint32_t SampleRate;
-  uint32_t ByteRate;
-  uint16_t BlockAlign;
-  uint16_t BitsPerSample;
-
-  // Mx extensions (not confirmed yet)
-  uint32_t DataSize;
-  uint32_t Flags;
 };
 
 }

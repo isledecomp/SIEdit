@@ -38,9 +38,12 @@ private:
   MxObPanel *panel_mxob_;
 
   si::Chunk *last_set_data_;
+  si::Chunk *root_;
 
 private slots:
   void SelectionChanged(const QModelIndex &index);
+
+  void ImmediateReweave();
 
 };
 

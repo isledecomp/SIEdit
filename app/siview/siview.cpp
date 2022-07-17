@@ -1,5 +1,6 @@
 #include "siview.h"
 
+#include <QFileDialog>
 #include <QPushButton>
 #include <QSplitter>
 #include <QTreeView>
@@ -9,6 +10,7 @@ using namespace si;
 
 SIViewDialog::SIViewDialog(Mode mode, Chunk *riff, QWidget *parent) :
   QDialog(parent),
+  root_(riff),
   last_set_data_(nullptr)
 {
   setWindowTitle(mode == Import ? tr("Import SI File") : tr("Export SI File"));
@@ -61,6 +63,12 @@ SIViewDialog::SIViewDialog(Mode mode, Chunk *riff, QWidget *parent) :
   connect(reject_btn, &QPushButton::clicked, this, &SIViewDialog::reject);
   btn_layout->addWidget(reject_btn);
 
+  if (mode == Import) {
+    auto imm_re_btn = new QPushButton(tr("Immediate Re-Weave"));
+    connect(imm_re_btn, &QPushButton::clicked, this, &SIViewDialog::ImmediateReweave);
+    btn_layout->addWidget(imm_re_btn);
+  }
+
   btn_layout->addStretch();
 }
 
@@ -105,5 +113,13 @@ void SIViewDialog::SelectionChanged(const QModelIndex &index)
 
   if (p != config_stack_->currentWidget() || c != last_set_data_) {
     SetPanel(p, c);
+  }
+}
+
+void SIViewDialog::ImmediateReweave()
+{
+  QString s = QFileDialog::getSaveFileName(this);
+  if (!s.isEmpty()) {
+    root_->Write(s.toStdString());
   }
 }

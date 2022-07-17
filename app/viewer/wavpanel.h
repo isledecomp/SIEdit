@@ -1,7 +1,7 @@
 #ifndef WAVPANEL_H
 #define WAVPANEL_H
 
-#include <sitypes.h>
+#include <othertypes.h>
 #include <QAudioOutput>
 #include <QBuffer>
 #include <QByteArray>
@@ -31,7 +31,7 @@ private:
   QBuffer buffer_;
   QByteArray array_;
   QTimer *playback_timer_;
-  si::WAVFormatHeader header_;
+  si::WAVFmt header_;
   QByteArray play_buffer_;
 
 private slots:

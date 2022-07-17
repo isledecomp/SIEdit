@@ -109,8 +109,12 @@ public:
   inline size_t size() const { return data_.size(); }
   inline const std::string toString() const
   {
-    // Subtract 1 from size, assuming the last character is a null terminator
-    return std::string(data_.data(), std::max(size_t(0), data_.size()-1));
+    if (data_.empty()) {
+      return std::string();
+    } else {
+      // Subtract 1 from size, assuming the last character is a null terminator
+      return std::string(data_.data(), std::max(size_t(0), data_.size()-1));
+    }
   }
 
   inline bool operator==(int u) const

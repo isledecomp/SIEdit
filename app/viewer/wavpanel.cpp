@@ -40,7 +40,7 @@ void WavPanel::OnOpeningData(void *data)
   si::Object *o = static_cast<si::Object*>(data);
 
   // Find fmt and data
-  header_ = *o->GetFileHeader().cast<si::WAVFormatHeader>();
+  header_ = *o->GetFileHeader().cast<si::WAVFmt>();
   playhead_slider_->setMaximum(o->GetFileBodySize()/GetSampleSize());
 }
 

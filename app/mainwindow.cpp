@@ -181,6 +181,10 @@ void MainWindow::SelectionChanged(const QModelIndex &index)
     case MxOb::STL:
       p = panel_bmp_;
       break;
+    case MxOb::SMK:
+    case MxOb::FLC:
+    case MxOb::OBJ:
+      break;
     }
   }
 

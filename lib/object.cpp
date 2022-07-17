@@ -37,9 +37,9 @@ bool Object::Parse(Chunk *chunk)
   if (chunk->HasChildren()) {
     Chunk *child = static_cast<Chunk*>(chunk->GetChildAt(0));
     if (child->id() == Chunk::TYPE_LIST) {
-      for (Core *entry : child->GetChildren()) {
+      for (Children::const_iterator it=child->GetChildren().begin(); it!=child->GetChildren().end(); it++) {
         Object *o = new Object();
-        if (!o->Parse(static_cast<Chunk*>(entry))) {
+        if (!o->Parse(static_cast<Chunk*>(*it))) {
           return false;
         }
         AppendChild(o);
@@ -79,6 +79,7 @@ Chunk *Object::Export() const
   if (HasChildren()) {
     Chunk *list = new Chunk(Chunk::TYPE_LIST);
     list->data("Format") = Chunk::TYPE_MxCh;
+    list->data("Count") = list->GetChildCount();
     chunk->AppendChild(list);
 
     for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
@@ -164,6 +165,15 @@ bytearray Object::ToPackedData(MxOb::FileType filetype, const ChunkedData &chunk
     }
     break;
   }
+  case MxOb::SMK:
+  case MxOb::OBJ:
+  {
+    // Simply merge
+    for (size_t i=0; i<chunks.size(); i++) {
+      data.append(chunks[i]);
+    }
+    break;
+  }
   default:
     std::cout << "Didn't know how to extract type '" << std::string((const char *)&filetype, sizeof(filetype)) << "', merging..." << std::endl;
     for (size_t i=0; i<chunks.size(); i++) {
@@ -181,28 +191,17 @@ Object::ChunkedData Object::ToChunkedData(MxOb::FileType filetype, const bytearr
   return ChunkedData();
 }
 
-bytearray Object::GetFileHeader() const
+const bytearray &Object::GetFileHeader() const
 {
-  switch (filetype()) {
-  case MxOb::WAV:
-  case MxOb::STL:
-    return data_.at(0);
-  }
-
-  return bytearray();
+  return data_.at(0);
 }
 
 bytearray Object::GetFileBody() const
 {
   bytearray b;
 
-  switch (filetype()) {
-  case MxOb::WAV:
-  case MxOb::STL:
-    for (size_t i=1; i<data_.size(); i++) {
-      b.append(data_.at(i));
-    }
-    break;
+  for (size_t i=1; i<data_.size(); i++) {
+    b.append(data_.at(i));
   }
 
   return b;
@@ -211,13 +210,9 @@ bytearray Object::GetFileBody() const
 size_t Object::GetFileBodySize() const
 {
   size_t s = 0;
-  switch (filetype()) {
-  case MxOb::WAV:
-  case MxOb::STL:
-    for (size_t i=1; i<data_.size(); i++) {
-      s += data_.at(i).size();
-    }
-    break;
+
+  for (size_t i=1; i<data_.size(); i++) {
+    s += data_.at(i).size();
   }
 
   return s;
@@ -229,8 +224,8 @@ Object *Object::FindSubObjectWithID(uint32_t id)
     return this;
   }
 
-  for (Core *child : GetChildren()) {
-    if (Object *o = static_cast<Object*>(child)->FindSubObjectWithID(id)) {
+  for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
+    if (Object *o = static_cast<Object*>(*it)->FindSubObjectWithID(id)) {
       return o;
     }
   }

@@ -25,7 +25,7 @@ public:
   LIBWEAVER_EXPORT static bytearray ToPackedData(MxOb::FileType filetype, const ChunkedData &chunks);
   LIBWEAVER_EXPORT static ChunkedData ToChunkedData(MxOb::FileType filetype, const bytearray &chunks);
 
-  LIBWEAVER_EXPORT bytearray GetFileHeader() const;
+  LIBWEAVER_EXPORT const bytearray &GetFileHeader() const;
   LIBWEAVER_EXPORT bytearray GetFileBody() const;
   LIBWEAVER_EXPORT size_t GetFileBodySize() const;
 

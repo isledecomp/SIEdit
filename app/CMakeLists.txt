@@ -52,6 +52,7 @@ endif()
 
 target_link_libraries(si-edit PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Multimedia libweaver)
 target_include_directories(si-edit PRIVATE "${CMAKE_SOURCE_DIR}/lib")
+target_compile_options(si-edit PRIVATE -Werror)
 
 set_target_properties(si-edit PROPERTIES
   MACOSX_BUNDLE_GUI_IDENTIFIER com.mattkc.SIEdit

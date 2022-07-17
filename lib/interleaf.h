@@ -3,6 +3,7 @@
 
 #include "chunk.h"
 #include "core.h"
+#include "object.h"
 
 namespace si {
 
@@ -16,6 +17,8 @@ public:
 
 private:
   bool ParseStream(Chunk *chunk);
+  Chunk *ExportStream(Object *obj) const;
+  Chunk *ExportMxCh(uint16_t flags, uint32_t object_id, uint32_t time, const bytearray &data = bytearray()) const;
 
   uint32_t version_;
   uint32_t buffer_size_;
