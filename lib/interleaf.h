@@ -45,7 +45,10 @@ private:
   void WriteObject(std::ostream &os, const Object *o) const;
 
   void InterleaveObjects(std::ostream &os, const std::vector<Object*> &objects) const;
+
   void WriteSubChunk(std::ostream &os, uint16_t flags, uint32_t object, uint32_t time, const bytearray &data = bytearray()) const;
+  void WriteSubChunkInternal(std::ostream &os, uint16_t flags, uint32_t object, uint32_t time, uint32_t data_sz, const bytearray &data) const;
+
   void WritePadding(std::ostream &os, uint32_t size) const;
 
   Info m_Info;
@@ -56,6 +59,9 @@ private:
 
   std::vector<uint32_t> m_ObjectList;
   std::map<uint32_t, Object*> m_ObjectIDTable;
+
+  uint32_t m_JoiningProgress;
+  uint32_t m_JoiningSize;
 
 };
 

@@ -84,6 +84,40 @@ public:
     memset(this->data(), c, this->size());
   }
 
+  bytearray left(size_t sz) const
+  {
+    bytearray b(std::min(sz, this->size()));
+    memcpy(b.data(), this->data(), b.size());
+    return b;
+  }
+
+  bytearray mid(size_t i, size_t size = 0) const
+  {
+    if (i >= this->size()) {
+      return bytearray();
+    }
+
+    size_t target = this->size() - i;
+    if (size != 0) {
+      target = std::min(target, size);
+    }
+
+    bytearray b(target);
+    memcpy(b.data(), this->data() + i, b.size());
+    return b;
+  }
+
+  bytearray right(size_t i) const
+  {
+    if (i >= size()) {
+      return *this;
+    }
+
+    bytearray b(i);
+    memcpy(b.data(), this->data() + this->size() - i, b.size());
+    return b;
+  }
+
 };
 
 LIBWEAVER_EXPORT class memorybuf : public std::streambuf

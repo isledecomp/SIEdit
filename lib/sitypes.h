@@ -103,7 +103,7 @@ class MxCh : public RIFF
 {
 public:
   enum Flag {
-    FLAG_SPLIT = 0x16,
+    FLAG_SPLIT = 0x10,
     FLAG_END = 0x2
   };
 

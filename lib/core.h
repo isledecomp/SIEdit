@@ -1,6 +1,7 @@
 #ifndef CORE_H
 #define CORE_H
 
+#include <algorithm>
 #include <vector>
 
 #include "types.h"
@@ -29,6 +30,7 @@ public:
   LIBWEAVER_EXPORT Core *GetChildAt(size_t index) const { return children_.at(index); }
   LIBWEAVER_EXPORT size_t GetChildCount() const { return children_.size(); }
   LIBWEAVER_EXPORT bool HasChildren() const { return !children_.empty(); }
+  LIBWEAVER_EXPORT bool ContainsChild(Core *child) const { return std::find(children_.begin(), children_.end(), child) != children_.end(); }
 
 protected:
   void DeleteChildren();

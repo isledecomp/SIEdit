@@ -64,8 +64,6 @@ public:
 
   ChunkedData data_;
 
-  bool last_chunk_split_;
-
 private:
 
 };

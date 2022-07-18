@@ -11,7 +11,6 @@ Object::Object()
 {
   type_ = MxOb::Null;
   id_ = 0;
-  last_chunk_split_ = false;
 }
 
 bool Object::ReplaceWithFile(const char *f)

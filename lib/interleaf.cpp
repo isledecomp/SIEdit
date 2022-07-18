@@ -21,6 +21,8 @@ void Interleaf::Clear()
 {
   m_Info.clear();
   m_BufferSize = 0;
+  m_JoiningProgress = 0;
+  m_JoiningSize = 0;
   m_ObjectIDTable.clear();
   m_ObjectList.clear();
   DeleteChildren();
@@ -193,11 +195,21 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, std::istream &is, Info *info
         return ERROR_INVALID_INPUT;
       }
 
-      if (flags & MxCh::FLAG_SPLIT && o->last_chunk_split_) {
+      if (flags & MxCh::FLAG_SPLIT && m_JoiningSize > 0) {
         o->data_.back().append(data);
+
+        m_JoiningProgress += data.size();
+        if (m_JoiningProgress == m_JoiningSize) {
+          m_JoiningProgress = 0;
+          m_JoiningSize = 0;
+        }
       } else {
         o->data_.push_back(data);
-        o->last_chunk_split_ = (flags & MxCh::FLAG_SPLIT);
+
+        if (flags & MxCh::FLAG_SPLIT) {
+          m_JoiningProgress = data.size();
+          m_JoiningSize = data_sz;
+        }
       }
       break;
     }
@@ -456,8 +468,18 @@ struct ChunkStatus
   Object *object;
   size_t index;
   uint32_t time;
-  bool end_chunk;
 };
+
+bool HasChildrenThatNeedPriority(Object *parent, uint32_t parent_time, const std::vector<ChunkStatus> &other_jobs)
+{
+  for (size_t i=0; i<other_jobs.size(); i++) {
+    if (parent->ContainsChild(other_jobs.at(i).object)
+        && other_jobs.at(i).time <= parent_time) {
+      return true;
+    }
+  }
+  return false;
+}
 
 void Interleaf::InterleaveObjects(std::ostream &os, const std::vector<Object *> &objects) const
 {
@@ -468,7 +490,6 @@ void Interleaf::InterleaveObjects(std::ostream &os, const std::vector<Object *> 
     status[i].object = objects.at(i);
     status[i].index = 0;
     status[i].time = 0;
-    status[i].end_chunk = false;
   }
 
   // First, interleave headers
@@ -484,23 +505,32 @@ void Interleaf::InterleaveObjects(std::ostream &os, const std::vector<Object *> 
   // Next, interleave the rest based on time
   while (true) {
     // Find next chunk
-    ChunkStatus *s = NULL;
+    std::vector<ChunkStatus>::iterator s = status.begin();
+    if (s == status.end()) {
+      break;
+    }
 
-    for (std::vector<ChunkStatus>::iterator it=status.begin(); it!=status.end(); it++) {
-      // Check if we've already written all these chunks
-      if (it->index >= it->object->data().size()) {
-        continue;
-      }
+    while (HasChildrenThatNeedPriority(s->object, s->time, status)) {
+      s++;
+    }
 
+    if (s == status.end()) {
+      break;
+    }
+
+    std::vector<ChunkStatus>::iterator it = s;
+    it++;
+    for (; it!=status.end(); it++) {
       // Find earliest chunk to write
-      if (!s || it->time < s->time) {
-        s = &(*it);
+      if (it->time < s->time && !HasChildrenThatNeedPriority(it->object, it->time, status)) {
+        s = it;
       }
     }
 
-    if (!s) {
-      // Assume chunks are all done
-      break;
+    if (s->index == s->object->data_.size()) {
+      WriteSubChunk(os, MxCh::FLAG_END, s->object->id(), s->time);
+      status.erase(s);
+      continue;
     }
 
     Object *obj = s->object;
@@ -540,34 +570,70 @@ void Interleaf::InterleaveObjects(std::ostream &os, const std::vector<Object *> 
       // Unaffected by time
       break;
     }
-  }
 
-  for (size_t i=1; i<status.size(); i++) {
-    const ChunkStatus &s = status.at(i);
-    WriteSubChunk(os, MxCh::FLAG_END, s.object->id(), s.time);
+    // Update parent time too
+    for (size_t i=0; i<status.size(); i++) {
+      ChunkStatus &p = status.at(i);
+      if (p.object != obj) {
+        if (p.object->ContainsChild(obj)) {
+          p.time = std::max(p.time, s->time);
+        }
+      }
+    }
   }
-  WriteSubChunk(os, MxCh::FLAG_END, status.front().object->id(), status.front().time);
 }
 
 void Interleaf::WriteSubChunk(std::ostream &os, uint16_t flags, uint32_t object, uint32_t time, const bytearray &data) const
 {
-  uint32_t total_sz = data.size() + MxCh::HEADER_SIZE + kMinimumChunkSize;
+  static const uint32_t total_hdr = MxCh::HEADER_SIZE + kMinimumChunkSize;
 
-  uint32_t start_buffer = os.tellp() / m_BufferSize;
-  uint32_t stop_buffer = (uint32_t(os.tellp()) + total_sz) / m_BufferSize;
+  uint32_t data_offset = 0;
 
-  if (start_buffer != stop_buffer) {
-    // This chunk won't fit in our buffer alignment. We must make a decision to either insert
-    // padding or split the clip.
-    WritePadding(os, (stop_buffer * m_BufferSize) - os.tellp());
+  while (data_offset < data.size() || data.size() == 0) {
+    uint32_t data_sz = data.size() - data_offset;
+
+    // Calculate whether this chunk will overrun the buffer
+    uint32_t start_buffer = os.tellp() / m_BufferSize;
+    uint32_t stop_buffer = (uint32_t(os.tellp()) - 1 + data_sz + total_hdr) / m_BufferSize;
+
+    size_t max_chunk = data_sz;
+
+    if (start_buffer != stop_buffer) {
+      size_t remaining = ((start_buffer + 1) * m_BufferSize) - os.tellp();
+      max_chunk = remaining - total_hdr;
+
+      if (!(flags & MxCh::FLAG_SPLIT)) {
+        if (remaining < 9882) {
+          // This chunk won't fit in our buffer alignment. We must make a decision to either insert
+          // padding or split the clip.
+          WritePadding(os, remaining);
+
+          // Do loop over again
+          continue;
+        } else {
+          flags |= MxCh::FLAG_SPLIT;
+        }
+      }
+    }
+
+    bytearray chunk = data.mid(data_offset, max_chunk);
+    WriteSubChunkInternal(os, flags, object, time, data_sz, chunk);
+    data_offset += chunk.size();
+
+    if (data.size() == 0) {
+      break;
+    }
   }
+}
 
+void Interleaf::WriteSubChunkInternal(std::ostream &os, uint16_t flags, uint32_t object, uint32_t time, uint32_t data_sz, const bytearray &data) const
+{
   RIFF::Chk mxch = RIFF::BeginChunk(os, RIFF::MxCh);
 
   WriteU16(os, flags);
   WriteU32(os, object);
   WriteU32(os, time);
-  WriteU32(os, data.size());
+  WriteU32(os, data_sz);
   WriteBytes(os, data);
 
   RIFF::EndChunk(os, mxch);
