@@ -1,8 +1,8 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include "chunk.h"
 #include "core.h"
+#include "sitypes.h"
 #include "types.h"
 
 namespace si {
@@ -13,9 +13,6 @@ public:
   typedef std::vector<bytearray> ChunkedData;
 
   Object();
-
-  bool Parse(Chunk *chunk);
-  Chunk *Export() const;
 
   void SetChunkedData(const ChunkedData &cd) { data_ = cd; }
 
@@ -38,7 +35,6 @@ public:
 
   Object *FindSubObjectWithID(uint32_t id);
 
-private:
   MxOb::Type type_;
   std::string presenter_;
   uint32_t unknown1_;

@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "util.h"
+
 namespace si {
 
 Object::Object()
@@ -10,29 +12,9 @@ Object::Object()
   id_ = 0;
 }
 
-bool Object::Parse(Chunk *chunk)
+/*bool Object::Read(std::ifstream &is)
 {
-  type_ = static_cast<MxOb::Type>(chunk->data("Type").toU16());
-  presenter_ = chunk->data("Presenter").toString();
-  unknown1_ = chunk->data("Unknown1");
-  name_ = chunk->data("Name").toString();
-  id_ = chunk->data("ID");
-  flags_ = chunk->data("Flags");
-  unknown4_ = chunk->data("Unknown4");
-  duration_ = chunk->data("Duration");
-  loops_ = chunk->data("Loops");
-  position_ = chunk->data("Position");
-  direction_ = chunk->data("Direction");
-  up_ = chunk->data("Up");
-  extra_ = chunk->data("ExtraData");
-  filename_ = chunk->data("FileName").toString();
-  unknown26_ = chunk->data("Unknown26");
-  unknown27_ = chunk->data("Unknown27");
-  unknown28_ = chunk->data("Unknown28");
-  filetype_ = static_cast<MxOb::FileType>(chunk->data("FileType").toU32());
-  unknown29_ = chunk->data("Unknown29");
-  unknown30_ = chunk->data("Unknown30");
-  unknown31_ = chunk->data("Unknown31");
+
 
   if (chunk->HasChildren()) {
     Chunk *child = static_cast<Chunk*>(chunk->GetChildAt(0));
@@ -50,31 +32,30 @@ bool Object::Parse(Chunk *chunk)
   return true;
 }
 
-Chunk *Object::Export() const
+void Object::Write(std::ofstream &os) const
 {
-  Chunk *chunk = new Chunk(Chunk::TYPE_MxOb);
-
-  chunk->data("Type") = type_;
-  chunk->data("Presenter") = presenter_;
-  chunk->data("Unknown1") = unknown1_;
-  chunk->data("Name") = name_;
-  chunk->data("ID") = id_;
-  chunk->data("Flags") = flags_;
-  chunk->data("Unknown4") = unknown4_;
-  chunk->data("Duration") = duration_;
-  chunk->data("Loops") = loops_;
-  chunk->data("Position") = position_;
-  chunk->data("Direction") = direction_;
-  chunk->data("Up") = up_;
-  chunk->data("ExtraData") = extra_;
-  chunk->data("FileName") = filename_;
-  chunk->data("Unknown26") = unknown26_;
-  chunk->data("Unknown27") = unknown27_;
-  chunk->data("Unknown28") = unknown28_;
-  chunk->data("FileType") = filetype_;
-  chunk->data("Unknown29") = unknown29_;
-  chunk->data("Unknown30") = unknown30_;
-  chunk->data("Unknown31") = unknown31_;
+  WriteU16(os, type_);
+  WriteString(os, presenter_);
+  WriteU32(os, unknown1_);
+  WriteString(os, name_);
+  WriteU32(os, id_);
+  WriteU32(os, flags_);
+  WriteU32(os, unknown4_);
+  WriteU32(os, duration_);
+  WriteU32(os, loops_);
+  WriteVector3(os, position_);
+  WriteVector3(os, direction_);
+  WriteVector3(os, up_);
+  WriteU16(os, extra_.size());
+  WriteBytes(os, extra_);
+  WriteString(os, filename_);
+  WriteU32(os, unknown26_);
+  WriteU32(os, unknown27_);
+  WriteU32(os, unknown28_);
+  WriteU32(os, filetype_);
+  WriteU32(os, unknown29_);
+  WriteU32(os, unknown30_);
+  WriteU32(os, unknown31_);
 
   if (HasChildren()) {
     Chunk *list = new Chunk(Chunk::TYPE_LIST);
@@ -89,7 +70,7 @@ Chunk *Object::Export() const
   }
 
   return chunk;
-}
+}*/
 
 bytearray Object::GetNormalizedData() const
 {
@@ -118,7 +99,7 @@ bytearray Object::ToPackedData(MxOb::FileType filetype, const ChunkedData &chunk
 
     // Copy boilerplate bytes for header
     uint32_t *header = reinterpret_cast<uint32_t *>(data.data());
-    header[0] = Chunk::TYPE_RIFF;     // "RIFF"
+    header[0] = SI::RIFF;     // "RIFF"
     header[1] = data.size() - 8;     // Size of total file
     header[2] = 0x45564157;           // "WAVE"
     header[3] = 0x20746D66;           // "fmt "

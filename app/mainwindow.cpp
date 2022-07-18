@@ -6,8 +6,6 @@
 #include <QMessageBox>
 #include <QSplitter>
 
-#include "siview/siview.h"
-
 using namespace si;
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -67,14 +65,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::OpenFilename(const QString &s)
 {
-  Chunk si;
-  if (si.Read(s.toStdString())) {
-    SIViewDialog d(SIViewDialog::Import, &si, this);
-    if (d.exec() == QDialog::Accepted) {
-      model_.SetCore(nullptr);
-      interleaf_.Parse(&si);
-      model_.SetCore(&interleaf_);
-    }
+  model_.SetCore(nullptr);
+
+  bool r =
+#ifdef Q_OS_WINDOWS
+    interleaf_.Read(s.toStdWString().c_str());
+#else
+    interleaf_.Read(s.toUtf8());
+#endif
+  ;
+
+  if (r) {
+    model_.SetCore(&interleaf_);
   } else {
     QMessageBox::critical(this, QString(), tr("Failed to load Interleaf file."));
   }
@@ -155,17 +157,6 @@ void MainWindow::OpenFile()
 
 void MainWindow::ExportFile()
 {
-  Chunk *c = interleaf_.Export();
-  SIViewDialog d(SIViewDialog::Export, c, this);
-  if (d.exec() == QDialog::Accepted) {
-    QString s = QFileDialog::getSaveFileName(this);
-    if (!s.isEmpty()) {
-      if (!c->Write(s.toStdString())) {
-        QMessageBox::critical(this, QString(), tr("Failed to write SI file."));
-      }
-    }
-  }
-  delete c;
 }
 
 void MainWindow::SelectionChanged(const QModelIndex &index)

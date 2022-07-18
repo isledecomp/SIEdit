@@ -1,7 +1,8 @@
 #ifndef INTERLEAF_H
 #define INTERLEAF_H
 
-#include "chunk.h"
+#include <fstream>
+
 #include "core.h"
 #include "object.h"
 
@@ -12,17 +13,30 @@ class Interleaf : public Core
 public:
   LIBWEAVER_EXPORT Interleaf();
 
-  LIBWEAVER_EXPORT bool Parse(Chunk *riff);
-  LIBWEAVER_EXPORT Chunk *Export() const;
+  LIBWEAVER_EXPORT void Clear();
+
+  LIBWEAVER_EXPORT bool Read(const char *f);
+  LIBWEAVER_EXPORT bool Read(const wchar_t *f);
+
+  //LIBWEAVER_EXPORT bool Write(const char *f) const;
+  //LIBWEAVER_EXPORT bool Write(const wchar_t *f) const;
 
 private:
-  bool ParseStream(Chunk *chunk);
-  Chunk *ExportStream(Object *obj) const;
-  Chunk *ExportMxCh(uint16_t flags, uint32_t object_id, uint32_t time, const bytearray &data = bytearray()) const;
+  bool Read(std::ifstream &is);
+  //bool Write(std::ofstream &os) const;
 
-  uint32_t version_;
-  uint32_t buffer_size_;
-  uint32_t buffer_count_;
+  bool ReadChunk(Core *parent, std::ifstream &is);
+
+  Object *ReadObject(std::ifstream &is);
+
+  uint32_t m_Version;
+  uint32_t m_BufferSize;
+  uint32_t m_BufferCount;
+
+  uint32_t m_OffsetCount;
+  std::vector<uint32_t> m_OffsetTable;
+
+  std::map<uint32_t, Object*> m_ObjectIndexTable;
 
 };
 

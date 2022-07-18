@@ -8,6 +8,23 @@
 
 namespace si {
 
+class SI
+{
+public:
+  enum Type
+  {
+    RIFF = 0x46464952,
+    LIST = 0x5453494c,
+    MxSt = 0x7453784d,
+    MxHd = 0x6448784d,
+    MxCh = 0x6843784d,
+    MxOf = 0x664f784d,
+    MxOb = 0x624f784d,
+    MxDa = 0x6144784d,
+    pad_ = 0x20646170
+  };
+};
+
 /**
  * @brief RIFF chunk type
  *
@@ -21,12 +38,6 @@ public:
   enum {
     OMNI = 0x494e4d4f
   };
-
-  virtual ~RIFF(){}
-
-  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
-  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
-
 };
 
 /**
@@ -40,8 +51,6 @@ public:
 class LIST : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
-  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -56,8 +65,6 @@ public:
 class MxHd : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
-  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -68,8 +75,6 @@ public:
 class MxSt : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
-  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -92,9 +97,6 @@ public:
   };
 
   static const uint32_t HEADER_SIZE = 14;
-
-  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
-  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -108,8 +110,6 @@ public:
 class MxOf : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
-  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 /**
@@ -121,9 +121,6 @@ public:
 class pad_ : public RIFF
 {
 public:
-  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
-  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
-
   static void WriteArbitraryPadding(std::ofstream &os, uint32_t size);
 };
 
@@ -235,9 +232,6 @@ public:
   //        probably be moved
   LIBWEAVER_EXPORT static const char *GetTypeName(Type type);
   LIBWEAVER_EXPORT static std::vector<const char*> GetFlagsName(Flags flags);
-
-  virtual void Read(std::ifstream &is, DataMap &data, uint32_t version, uint32_t size);
-  virtual void Write(std::ofstream &os, const DataMap &data, uint32_t version);
 };
 
 }

@@ -147,8 +147,6 @@ private:
 
 };
 
-typedef std::map<std::string, Data> DataMap;
-
 }
 
 #endif // TYPES_H

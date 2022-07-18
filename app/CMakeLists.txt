@@ -4,20 +4,20 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Multimedia)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Multimedia)
 
 set(PROJECT_SOURCES
-  siview/chunkmodel.cpp
-  siview/chunkmodel.h
-  siview/panels/mxch.cpp
-  siview/panels/mxch.h
-  siview/panels/mxhd.cpp
-  siview/panels/mxhd.h
-  siview/panels/mxob.cpp
-  siview/panels/mxob.h
-  siview/panels/mxof.cpp
-  siview/panels/mxof.h
-  siview/panels/riff.cpp
-  siview/panels/riff.h
-  siview/siview.cpp
-  siview/siview.h
+#  siview/chunkmodel.cpp
+#  siview/chunkmodel.h
+#  siview/panels/mxch.cpp
+#  siview/panels/mxch.h
+#  siview/panels/mxhd.cpp
+#  siview/panels/mxhd.h
+#  siview/panels/mxob.cpp
+#  siview/panels/mxob.h
+#  siview/panels/mxof.cpp
+#  siview/panels/mxof.h
+#  siview/panels/riff.cpp
+#  siview/panels/riff.h
+#  siview/siview.cpp
+#  siview/siview.h
 
   viewer/bitmappanel.cpp
   viewer/bitmappanel.h
@@ -52,7 +52,9 @@ endif()
 
 target_link_libraries(si-edit PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Multimedia libweaver)
 target_include_directories(si-edit PRIVATE "${CMAKE_SOURCE_DIR}/lib")
-target_compile_options(si-edit PRIVATE -Werror)
+if (NOT MSVC)
+  target_compile_options(si-edit PRIVATE -Werror)
+endif()
 
 set_target_properties(si-edit PROPERTIES
   MACOSX_BUNDLE_GUI_IDENTIFIER com.mattkc.SIEdit
