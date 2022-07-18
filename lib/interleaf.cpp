@@ -603,7 +603,11 @@ void Interleaf::WriteSubChunk(FileBase *f, uint16_t flags, uint32_t object, uint
       max_chunk = remaining - total_hdr;
 
       if (!(flags & MxCh::FLAG_SPLIT)) {
-        if (remaining < 9882) {
+
+        // FIXME: Not sure exactly what this value is yet, likely to be smaller than this
+        static const uint32_t MAX_PADDING = 9882;
+
+        if (remaining < MAX_PADDING) {
           // This chunk won't fit in our buffer alignment. We must make a decision to either insert
           // padding or split the clip.
           WritePadding(f, remaining);
