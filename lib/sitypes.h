@@ -36,8 +36,8 @@ public:
 
   struct Chk
   {
-    std::ios::pos_type size_position;
-    std::ios::pos_type data_start;
+    size_t size_position;
+    size_t data_start;
   };
 
   static Chk BeginChunk(FileBase *f, uint32_t type);
@@ -133,7 +133,6 @@ public:
 class pad_ : public RIFF
 {
 public:
-  static void WriteArbitraryPadding(std::ostream &os, uint32_t size);
 };
 
 /**

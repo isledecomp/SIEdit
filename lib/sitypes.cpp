@@ -106,7 +106,7 @@ RIFF::Chk RIFF::BeginChunk(FileBase *f, uint32_t type)
 
 void RIFF::EndChunk(FileBase *f, const Chk &stat)
 {
-  std::ios::pos_type now = f->pos();
+  size_t now = f->pos();
 
   uint32_t sz = now - stat.data_start;
 
