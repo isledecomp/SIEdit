@@ -13,6 +13,8 @@ public:
   void *GetData() const { return data_; }
   void SetData(void *data);
 
+  void ResetData();
+
 signals:
 
 protected:

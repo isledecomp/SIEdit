@@ -146,13 +146,15 @@ void MainWindow::ReplaceObject(si::Object *obj)
 {
   QString s = QFileDialog::getOpenFileName(this, tr("Replace Object"));
   if (!s.isEmpty()) {
-    if (!obj->ReplaceWithFile(
+    if (obj->ReplaceWithFile(
 #ifdef Q_OS_WINDOWS
           s.toStdWString().c_str()
 #else
           s.toUtf8()
 #endif
         )) {
+      static_cast<Panel*>(config_stack_->currentWidget())->ResetData();
+    } else {
       QMessageBox::critical(this, QString(), tr("Failed to open to file \"%1\".").arg(s));
     }
   }

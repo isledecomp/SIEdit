@@ -23,6 +23,11 @@ void Panel::SetData(void *data)
   }
 }
 
+void Panel::ResetData()
+{
+  SetData(data_);
+}
+
 void Panel::FinishLayout()
 {
   outer_layout_->addStretch();
