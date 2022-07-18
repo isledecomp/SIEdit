@@ -600,6 +600,19 @@ void Interleaf::WriteSubChunk(FileBase *f, uint16_t flags, uint32_t object, uint
 
     if (start_buffer != stop_buffer) {
       size_t remaining = ((start_buffer + 1) * m_BufferSize) - f->pos();
+
+      if (remaining < total_hdr) {
+        if (remaining < kMinimumChunkSize) {
+          // There isn't enough space for another chunk, just jump ahead
+          f->seek(remaining, File::SeekCurrent);
+        } else {
+          // This chunk won't fit in our buffer alignment. We must make a decision to either insert
+          // padding or split the clip.
+          WritePadding(f, remaining);
+        }
+        continue;
+      }
+
       max_chunk = remaining - total_hdr;
 
       if (!(flags & MxCh::FLAG_SPLIT)) {
