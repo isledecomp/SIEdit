@@ -6,7 +6,7 @@ namespace si {
 
 bool File::Open(const char *c, Mode mode)
 {
-  std::ios::open_mode m = std::ios::binary;
+  std::ios::openmode m = std::ios::binary;
 
   if (mode == Read) {
     m |= std::ios::in;
@@ -55,7 +55,7 @@ size_t File::pos()
 
 void File::seek(size_t p, SeekMode s)
 {
-  std::ios::seek_dir d;
+  std::ios::seekdir d;
 
   switch (s) {
   case SeekStart:
