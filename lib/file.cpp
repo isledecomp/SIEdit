@@ -53,6 +53,15 @@ size_t File::pos()
   }
 }
 
+size_t File::size()
+{
+  size_t before = pos();
+  seek(0, SeekEnd);
+  size_t sz = pos();
+  seek(before, SeekStart);
+  return sz;
+}
+
 void File::seek(size_t p, SeekMode s)
 {
   std::ios::seekdir d;
@@ -81,19 +90,23 @@ bool File::atEnd()
   return !m_Stream.good();
 }
 
-void File::CloseHandle()
+void File::Close()
 {
   m_Stream.close();
 }
 
-void File::ReadData(char *data, size_t size)
+size_t File::ReadData(char *data, size_t size)
 {
+  size_t before = this->pos();
   m_Stream.read(data, size);
+  return this->pos() - before;
 }
 
-void File::WriteData(const char *data, size_t size)
+size_t File::WriteData(const char *data, size_t size)
 {
+  size_t before = this->pos();
   m_Stream.write(data, size);
+  return this->pos() - before;
 }
 
 uint8_t FileBase::ReadU8()
@@ -188,9 +201,20 @@ MemoryBuffer::MemoryBuffer()
   m_Position = 0;
 }
 
+MemoryBuffer::MemoryBuffer(const bytearray &data)
+{
+  m_Internal = data;
+  m_Position = 0;
+}
+
 size_t MemoryBuffer::pos()
 {
   return m_Position;
+}
+
+size_t MemoryBuffer::size()
+{
+  return m_Internal.size();
 }
 
 void MemoryBuffer::seek(size_t p, SeekMode s)
@@ -213,22 +237,23 @@ bool MemoryBuffer::atEnd()
   return m_Position == m_Internal.size();
 }
 
-void MemoryBuffer::ReadData(char *data, size_t size)
+size_t MemoryBuffer::ReadData(char *data, size_t size)
 {
   size = std::min(size, m_Internal.size() - m_Position);
   memcpy(data, m_Internal.data() + m_Position, size);
   m_Position += size;
+  return size;
 }
 
-void MemoryBuffer::WriteData(const char *data, size_t size)
+size_t MemoryBuffer::WriteData(const char *data, size_t size)
 {
-  LogDebug() << "writing " << size << " bytes to " << m_Position << std::endl;
   size_t end = m_Position + size;
   if (end > m_Internal.size()) {
     m_Internal.resize(end);
   }
   memcpy(m_Internal.data() + m_Position, data, size);
   m_Position += size;
+  return size;
 }
 
 }
