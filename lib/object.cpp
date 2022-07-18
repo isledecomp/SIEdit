@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "othertypes.h"
 #include "util.h"
 
 namespace si {
@@ -10,166 +11,213 @@ Object::Object()
 {
   type_ = MxOb::Null;
   id_ = 0;
+  last_chunk_split_ = false;
 }
 
-/*bool Object::Read(std::ifstream &is)
+bool Object::ReplaceWithFile(const char *f)
 {
-
-
-  if (chunk->HasChildren()) {
-    Chunk *child = static_cast<Chunk*>(chunk->GetChildAt(0));
-    if (child->id() == Chunk::TYPE_LIST) {
-      for (Children::const_iterator it=child->GetChildren().begin(); it!=child->GetChildren().end(); it++) {
-        Object *o = new Object();
-        if (!o->Parse(static_cast<Chunk*>(*it))) {
-          return false;
-        }
-        AppendChild(o);
-      }
-    }
+  std::ifstream is(f);
+  if (!is.is_open() || !is.good()) {
+    return false;
   }
-
-  return true;
+  return ReplaceWithFile(is);
 }
 
-void Object::Write(std::ofstream &os) const
+bool Object::ExtractToFile(const char *f) const
 {
-  WriteU16(os, type_);
-  WriteString(os, presenter_);
-  WriteU32(os, unknown1_);
-  WriteString(os, name_);
-  WriteU32(os, id_);
-  WriteU32(os, flags_);
-  WriteU32(os, unknown4_);
-  WriteU32(os, duration_);
-  WriteU32(os, loops_);
-  WriteVector3(os, position_);
-  WriteVector3(os, direction_);
-  WriteVector3(os, up_);
-  WriteU16(os, extra_.size());
-  WriteBytes(os, extra_);
-  WriteString(os, filename_);
-  WriteU32(os, unknown26_);
-  WriteU32(os, unknown27_);
-  WriteU32(os, unknown28_);
-  WriteU32(os, filetype_);
-  WriteU32(os, unknown29_);
-  WriteU32(os, unknown30_);
-  WriteU32(os, unknown31_);
-
-  if (HasChildren()) {
-    Chunk *list = new Chunk(Chunk::TYPE_LIST);
-    list->data("Format") = Chunk::TYPE_MxCh;
-    list->data("Count") = list->GetChildCount();
-    chunk->AppendChild(list);
-
-    for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
-      Object *child = static_cast<Object*>(*it);
-      list->AppendChild(child->Export());
-    }
+  std::ofstream os(f);
+  if (!os.is_open() || !os.good()) {
+    return false;
   }
-
-  return chunk;
-}*/
-
-bytearray Object::GetNormalizedData() const
-{
-  return ToPackedData(filetype(), data_);
+  return ExtractToFile(os);
 }
 
-void Object::SetNormalizedData(const bytearray &d)
+bool Object::ReplaceWithFile(std::istream &is)
 {
-  SetChunkedData(ToChunkedData(filetype(), d));
-}
+  data_.clear();
 
-bytearray Object::ToPackedData(MxOb::FileType filetype, const ChunkedData &chunks)
-{
-  bytearray data;
-
-  switch (filetype) {
+  switch (this->filetype()) {
   case MxOb::WAV:
   {
-    // Make space for WAVE header
-    data.resize(0x2C);
-
-    // Merge all chunks after the first one
-    for (size_t i=1; i<chunks.size(); i++) {
-      data.append(chunks[i]);
+    if (ReadU32(is) != RIFF::RIFF_) {
+      return false;
     }
 
-    // Copy boilerplate bytes for header
-    uint32_t *header = reinterpret_cast<uint32_t *>(data.data());
-    header[0] = SI::RIFF;     // "RIFF"
-    header[1] = data.size() - 8;     // Size of total file
-    header[2] = 0x45564157;           // "WAVE"
-    header[3] = 0x20746D66;           // "fmt "
-    header[4] = 16;                   // Size of fmt chunk
-    header[9] = 0x61746164;           // "data"
-    header[10] = data.size() - 0x2C; // Size of data chunk
+    // Skip total size
+    ReadU32(is);
 
-    // Copy fmt header from chunk 1
-    memcpy(&header[5], chunks[0].data(), 16);
+    if (ReadU32(is) != RIFF::WAVE) {
+      return false;
+    }
+
+    bytearray fmt;
+    bytearray data;
+
+    while (is.good()) {
+      uint32_t id = ReadU32(is);
+      uint32_t sz = ReadU32(is);
+      if (id == RIFF::fmt_) {
+        fmt.resize(sz);
+        is.read(fmt.data(), fmt.size());
+      } else if (id == RIFF::data) {
+        data.resize(sz);
+        is.read(data.data(), data.size());
+      } else {
+        is.seekg(sz, std::ios::cur);
+      }
+    }
+
+    if (fmt.empty() || data.empty()) {
+      return false;
+    }
+
+    data_.push_back(fmt);
+    WAVFmt *fmt_info = fmt.cast<WAVFmt>();
+    size_t second_in_bytes = fmt_info->Channels * fmt_info->SampleRate * (fmt_info->BitsPerSample/8);
+    size_t max;
+    for (size_t i=0; i<data.size(); i+=max) {
+      max = std::min(data.size() - i, second_in_bytes);
+      data_.push_back(bytearray(data.data() + i, max));
+    }
+
+    return true;
+  }
+  case MxOb::SMK:
+  {
+    // Read header
+    bytearray hdr(sizeof(SMK2));
+    is.read(hdr.data(), hdr.size());
+
+    // Read frame sizes
+    SMK2 smk = *hdr.cast<SMK2>();
+    bytearray frame_sizes(smk.Frames * sizeof(uint32_t));
+    is.read(frame_sizes.data(), frame_sizes.size());
+    hdr.append(frame_sizes);
+
+    // Read frame types
+    bytearray frame_types(smk.Frames);
+    is.read(frame_types.data(), frame_types.size());
+    hdr.append(frame_types);
+
+    // Read Huffman trees
+    bytearray huffman(smk.TreesSize);
+    is.read(huffman.data(), huffman.size());
+    hdr.append(huffman);
+
+    // Place header into data vector
+    data_.resize(smk.Frames + 1);
+    data_[0] = hdr;
+
+    uint32_t *real_sizes = frame_sizes.cast<uint32_t>();
+    for (uint32_t i=0; i<smk.Frames; i++) {
+      uint32_t sz = real_sizes[i];
+      if (sz > 0) {
+        bytearray &d = data_[i+1];
+        d.resize(sz);
+        is.read(d.data(), d.size());
+      }
+    }
+    return true;
+  }
+  default:
+    LogWarning() << "Don't yet know how to chunk type " << RIFF::PrintU32AsString(this->filetype()) << std::endl;
+    break;
+  }
+
+  return false;
+}
+
+bool Object::ExtractToFile(std::ostream &os) const
+{
+  switch (this->filetype()) {
+  case MxOb::WAV:
+  {
+    // Write RIFF header
+    RIFF::Chk riff = RIFF::BeginChunk(os, RIFF::RIFF_);
+
+    WriteU32(os, RIFF::WAVE);
+
+    {
+      RIFF::Chk fmt = RIFF::BeginChunk(os, RIFF::fmt_);
+
+      WriteBytes(os, data_.at(0));
+
+      RIFF::EndChunk(os, fmt);
+    }
+
+    {
+      RIFF::Chk data = RIFF::BeginChunk(os, RIFF::data);
+      // Merge all chunks after the first one
+      for (size_t i=1; i<data_.size(); i++) {
+        WriteBytes(os, data_.at(i));
+      }
+      RIFF::EndChunk(os, data);
+    }
+
+    RIFF::EndChunk(os, riff);
     break;
   }
   case MxOb::STL:
   {
-    // Make space for BMP header
-    data.resize(14);
+    static const uint32_t BMP_HDR_SZ = 14;
 
-    // Merge all chunks after the first one
-    for (size_t i=0; i<chunks.size(); i++) {
-      data.append(chunks[i]);
+    // Write BMP header
+    WriteU16(os, 0x4D42);
+
+    // Write placeholder for size
+    std::ios::pos_type sz_loc = os.tellp();
+    WriteU32(os, 0);
+
+    // Write "reserved" bytes
+    WriteU32(os, 0);
+
+    // Write data offset
+    WriteU32(os, data_.at(0).size() + BMP_HDR_SZ);
+
+    for (size_t i=0; i<data_.size(); i++) {
+      WriteBytes(os, data_.at(i));
     }
 
-    // Set BM identifier
-    *(uint16_t *)(data.data()) = 0x4D42;
-
-    // Set file size
-    *(uint32_t*)(data.data()+2) = data.size();
-
-    // Set reserved bytes
-    *(uint32_t*)(data.data()+6) = 0;
-
-    // Set offset
-    *(uint32_t*)(data.data()+10) = chunks.at(0).size() + 14;
+    std::ios::pos_type len = os.tellp();
+    os.seekp(sz_loc);
+    WriteU32(os, len);
     break;
   }
   case MxOb::FLC:
   {
     // First chunk is a complete FLIC header, so add it as-is
-    data.append(chunks[0]);
+    WriteBytes(os, data_.at(0));
 
     // Subsequent chunks are FLIC frames with an additional 20 byte header that needs to be stripped
     const int CUSTOM_HEADER_SZ = 20;
-    for (size_t i=1; i<chunks.size(); i++) {
-      data.append(chunks.at(i).data() + CUSTOM_HEADER_SZ, chunks.at(i).size() - CUSTOM_HEADER_SZ);
-    }
-    break;
-  }
-  case MxOb::SMK:
-  case MxOb::OBJ:
-  {
-    // Simply merge
-    for (size_t i=0; i<chunks.size(); i++) {
-      data.append(chunks[i]);
+    for (size_t i=1; i<data_.size(); i++) {
+      os.write(data_.at(i).data() + CUSTOM_HEADER_SZ, data_.at(i).size() - CUSTOM_HEADER_SZ);
     }
     break;
   }
   default:
-    std::cout << "Didn't know how to extract type '" << std::string((const char *)&filetype, sizeof(filetype)) << "', merging..." << std::endl;
-    for (size_t i=0; i<chunks.size(); i++) {
-      data.append(chunks[i]);
+    LogWarning() << "Didn't know how to extract type '" << RIFF::PrintU32AsString(filetype()) << "', merging..." << std::endl;
+    /* fall-through */
+  case MxOb::SMK:
+  case MxOb::OBJ:
+    // Simply merge
+    for (size_t i=0; i<data_.size(); i++) {
+      WriteBytes(os, data_.at(i));
     }
     break;
   }
 
-  return data;
+  return true;
 }
 
-Object::ChunkedData Object::ToChunkedData(MxOb::FileType filetype, const bytearray &chunks)
+bytearray Object::ExtractToMemory() const
 {
-  // FIXME: STUB
-  return ChunkedData();
+  memorybuf buf;
+  std::ostream os(&buf);
+
+  ExtractToFile(os);
+
+  return buf.data();
 }
 
 const bytearray &Object::GetFileHeader() const

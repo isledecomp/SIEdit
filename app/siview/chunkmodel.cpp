@@ -1,6 +1,7 @@
 #include "chunkmodel.h"
 
 #include <iostream>
+#include <sitypes.h>
 
 #define super Model
 
@@ -18,7 +19,7 @@ int ChunkModel::columnCount(const QModelIndex &parent) const
 
 QVariant ChunkModel::data(const QModelIndex &index, int role) const
 {
-  Chunk *c = static_cast<Chunk*>(GetCoreFromIndex(index));
+  Info *c = static_cast<Info*>(GetCoreFromIndex(index));
   if (!c) {
     return QVariant();
   }
@@ -29,16 +30,15 @@ QVariant ChunkModel::data(const QModelIndex &index, int role) const
     switch (index.column()) {
     case kColType:
       // Convert 4-byte ID to QString
-      return QString::fromLatin1(reinterpret_cast<const char *>(&c->id()), sizeof(uint32_t));
+      return QString::fromLatin1(reinterpret_cast<const char *>(&c->GetType()), sizeof(uint32_t));
     case kColOffset:
-      return QStringLiteral("0x%1").arg(QString::number(c->offset(), 16).toUpper());
+      return QStringLiteral("0x%1").arg(QString::number(c->GetOffset(), 16).toUpper());
     case kColDesc:
-      return QString::fromUtf8(c->GetTypeDescription());
+      return QString::fromUtf8(RIFF::GetTypeDescription(static_cast<RIFF::Type>(c->GetType())));
     case kColObjectID:
-      if (c->type() == Chunk::TYPE_MxOb) {
-        return c->data("ID").toU32();
-      } else if (c->type() == Chunk::TYPE_MxCh) {
-        return c->data("Object").toU32();
+      uint32_t i = c->GetObjectID();
+      if (i != Info::NULL_OBJECT_ID) {
+        return QString::number(i);
       }
       break;
     }

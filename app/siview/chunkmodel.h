@@ -1,7 +1,7 @@
 #ifndef CHUNKMODEL_H
 #define CHUNKMODEL_H
 
-#include <chunk.h>
+#include <info.h>
 
 #include "model.h"
 

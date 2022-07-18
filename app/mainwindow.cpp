@@ -6,7 +6,11 @@
 #include <QMessageBox>
 #include <QSplitter>
 
+#include "siview/siview.h"
+
 using namespace si;
+
+const QString MainWindow::kFileFilter = tr("Interleaf Files (*.si)");
 
 MainWindow::MainWindow(QWidget *parent) :
   QMainWindow{parent},
@@ -41,6 +45,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   auto replace_btn = new QPushButton(tr("Replace"));
   action_layout->addWidget(replace_btn);
+  connect(replace_btn, &QPushButton::clicked, this, &MainWindow::ReplaceClicked);
 
   action_layout->addStretch();
 
@@ -67,18 +72,8 @@ void MainWindow::OpenFilename(const QString &s)
 {
   model_.SetCore(nullptr);
 
-  bool r =
-#ifdef Q_OS_WINDOWS
-    interleaf_.Read(s.toStdWString().c_str());
-#else
-    interleaf_.Read(s.toUtf8());
-#endif
-  ;
-
-  if (r) {
+  if (OpenInterleafFileInternal(this, &interleaf_, s)) {
     model_.SetCore(&interleaf_);
-  } else {
-    QMessageBox::critical(this, QString(), tr("Failed to load Interleaf file."));
   }
 }
 
@@ -88,22 +83,21 @@ void MainWindow::InitializeMenuBar()
 
   auto file_menu = menubar->addMenu(tr("&File"));
 
-  auto new_action = file_menu->addAction(tr("&New"));
+  file_menu->addAction(tr("&New"), this, &MainWindow::NewFile, tr("Ctrl+N"));
 
-  auto open_action = file_menu->addAction(tr("&Open"), this, &MainWindow::OpenFile, tr("Ctrl+O"));
+  file_menu->addAction(tr("&Open"), this, &MainWindow::OpenFile, tr("Ctrl+O"));
 
-  auto save_action = file_menu->addAction(tr("&Save"));
-  auto save_as_action = file_menu->addAction(tr("Save &As"));
+  file_menu->addAction(tr("&Save"), this, &MainWindow::SaveFile, tr("Ctrl+S"));
 
-  file_menu->addSeparator();
-
-  auto export_action = file_menu->addAction(tr("&Export"));
-  connect(export_action, &QAction::triggered, this, &MainWindow::ExportFile);
+  file_menu->addAction(tr("Save &As"), this, &MainWindow::SaveFileAs, tr("Ctrl+Shift+S"));
 
   file_menu->addSeparator();
 
-  auto exit_action = file_menu->addAction(tr("E&xit"));
-  connect(exit_action, &QAction::triggered, this, &MainWindow::close);
+  file_menu->addAction(tr("&View SI File"), this, &MainWindow::ViewSIFile);
+
+  file_menu->addSeparator();
+
+  file_menu->addAction(tr("E&xit"), this, &MainWindow::close);
 
   setMenuBar(menubar);
 }
@@ -136,27 +130,102 @@ void MainWindow::ExtractObject(si::Object *obj)
 
   QString s = QFileDialog::getSaveFileName(this, tr("Export Object"), filename);
   if (!s.isEmpty()) {
-    QFile f(s);
-    if (f.open(QFile::WriteOnly)) {
-      bytearray b = obj->GetNormalizedData();
-      f.write(b.data(), b.size());
-      f.close();
-    } else {
+    if (!obj->ExtractToFile(
+#ifdef Q_OS_WINDOWS
+          s.toStdWString().c_str()
+#else
+          s.toUtf8()
+#endif
+          )) {
       QMessageBox::critical(this, QString(), tr("Failed to write to file \"%1\".").arg(s));
     }
   }
 }
 
+void MainWindow::ReplaceObject(si::Object *obj)
+{
+  QString s = QFileDialog::getOpenFileName(this, tr("Replace Object"));
+  if (!s.isEmpty()) {
+    if (!obj->ReplaceWithFile(
+#ifdef Q_OS_WINDOWS
+          s.toStdWString().c_str()
+#else
+          s.toUtf8()
+#endif
+        )) {
+      QMessageBox::critical(this, QString(), tr("Failed to open to file \"%1\".").arg(s));
+    }
+  }
+}
+
+bool MainWindow::OpenInterleafFileInternal(QWidget *parent, si::Interleaf *interleaf, const QString &s)
+{
+  Interleaf::Error r = interleaf->Read(
+#ifdef Q_OS_WINDOWS
+    s.toStdWString().c_str()
+#else
+    s.toUtf8()
+#endif
+  );
+
+  if (r == Interleaf::ERROR_SUCCESS) {
+    return true;
+  } else {
+    QMessageBox::critical(parent, QString(), tr("Failed to load Interleaf file: %1").arg(r));
+    return false;
+  }
+}
+
+QString MainWindow::GetOpenFileName()
+{
+  return QFileDialog::getOpenFileName(this, QString(), QString(), kFileFilter);
+}
+
+void MainWindow::NewFile()
+{
+  model_.SetCore(nullptr);
+  interleaf_.Clear();
+  model_.SetCore(&interleaf_);
+}
+
 void MainWindow::OpenFile()
 {
-  QString s = QFileDialog::getOpenFileName(this, QString(), QString(), tr("Interleaf Files (*.si)"));
+  QString s = GetOpenFileName();
   if (!s.isEmpty()) {
     OpenFilename(s);
   }
 }
 
-void MainWindow::ExportFile()
+bool MainWindow::SaveFile()
 {
+  if (current_filename_.isEmpty()) {
+    return SaveFileAs();
+  } else {
+    Interleaf::Error r = interleaf_.Write(
+#ifdef Q_OS_WINDOWS
+      current_filename_.toStdWString().c_str()
+#else
+      current_filename_.toUtf8()
+#endif
+    );
+
+    if (r == Interleaf::ERROR_SUCCESS) {
+      return true;
+    } else {
+      QMessageBox::critical(this, QString(), tr("Failed to write SI file: %1").arg(r));
+      return false;
+    }
+  }
+}
+
+bool MainWindow::SaveFileAs()
+{
+  current_filename_ = QFileDialog::getSaveFileName(this, QString(), QString(), kFileFilter);
+  if (!current_filename_.isEmpty()) {
+    return SaveFile();
+  }
+
+  return false;
 }
 
 void MainWindow::SelectionChanged(const QModelIndex &index)
@@ -211,4 +280,23 @@ void MainWindow::ExtractSelectedItems()
 void MainWindow::ExtractClicked()
 {
   ExtractObject(last_set_data_);
+}
+
+void MainWindow::ReplaceClicked()
+{
+  ReplaceObject(last_set_data_);
+}
+
+void MainWindow::ViewSIFile()
+{
+  QString s = GetOpenFileName();
+  if (!s.isEmpty()) {
+    std::unique_ptr<Interleaf> temp = std::make_unique<Interleaf>();
+    if (OpenInterleafFileInternal(this, temp.get(), s)) {
+      SIViewDialog *v = new SIViewDialog(temp->GetInformation(), this);
+      v->temp = std::move(temp);
+      v->setAttribute(Qt::WA_DeleteOnClose);
+      v->show();
+    }
+  }
 }

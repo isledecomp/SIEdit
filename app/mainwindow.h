@@ -24,13 +24,18 @@ public:
 signals:
 
 private:
-  //bool CloseFile();
-
   void InitializeMenuBar();
 
   void SetPanel(Panel *panel, si::Object *chunk);
 
   void ExtractObject(si::Object *obj);
+  void ReplaceObject(si::Object *obj);
+
+  static bool OpenInterleafFileInternal(QWidget *parent, si::Interleaf *interleaf, const QString &s);
+
+  QString GetOpenFileName();
+
+  static const QString kFileFilter;
 
   QStackedWidget *config_stack_;
 
@@ -47,20 +52,24 @@ private:
 
   si::Object *last_set_data_;
 
-private slots:
-  void OpenFile();
-  //bool SaveFile();
-  //bool SaveFileAs();
+  QString current_filename_;
 
-  void ExportFile();
+private slots:
+  void NewFile();
+  void OpenFile();
+  bool SaveFile();
+  bool SaveFileAs();
 
   void SelectionChanged(const QModelIndex &index);
 
   void ShowContextMenu(const QPoint &p);
 
   void ExtractSelectedItems();
-
   void ExtractClicked();
+
+  void ReplaceClicked();
+
+  void ViewSIFile();
 
 };
 

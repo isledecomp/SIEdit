@@ -1,49 +1,35 @@
 #ifndef SIVIEW_H
 #define SIVIEW_H
 
+#include <interleaf.h>
 #include <QDialog>
 #include <QStackedWidget>
 
 #include "chunkmodel.h"
-#include "panels/mxch.h"
-#include "panels/mxhd.h"
-#include "panels/mxob.h"
-#include "panels/mxof.h"
-#include "panels/riff.h"
-#include "panel.h"
+#include "infopanel.h"
 
-class SIViewDialog : public QDialog
+class SIViewDialog : public QWidget
 {
   Q_OBJECT
 public:
-  enum Mode {
-    Import,
-    Export
-  };
+  SIViewDialog(si::Info *info, QWidget *parent = nullptr);
 
-  SIViewDialog(Mode mode, si::Chunk *riff, QWidget *parent = nullptr);
+  std::unique_ptr<si::Interleaf> temp;
 
 private:
-  void SetPanel(Panel *panel, si::Chunk *chunk);
-
   QStackedWidget *config_stack_;
 
   ChunkModel chunk_model_;
 
-  Panel *panel_blank_;
-  RIFFPanel *panel_riff_;
-  MxHdPanel *panel_mxhd_;
-  MxChPanel *panel_mxch_;
-  MxOfPanel *panel_mxof_;
-  MxObPanel *panel_mxob_;
+  InfoPanel *panel_;
 
-  si::Chunk *last_set_data_;
-  si::Chunk *root_;
+  const si::Info *last_set_data_;
+  const si::Info *root_;
+
+  std::unique_ptr<si::Interleaf> temp_interleaf_;
 
 private slots:
   void SelectionChanged(const QModelIndex &index);
-
-  void ImmediateReweave();
 
 };
 

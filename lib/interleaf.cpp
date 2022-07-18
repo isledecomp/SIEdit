@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <sstream>
 
 #include "object.h"
 #include "othertypes.h"
@@ -10,169 +11,219 @@
 
 namespace si {
 
+static const uint32_t kMinimumChunkSize = 8;
+
 Interleaf::Interleaf()
 {
 }
 
 void Interleaf::Clear()
 {
+  m_Info.clear();
   m_BufferSize = 0;
-  m_OffsetTable.clear();
-  m_ObjectIndexTable.clear();
+  m_ObjectIDTable.clear();
+  m_ObjectList.clear();
   DeleteChildren();
 }
 
-bool Interleaf::Read(const char *f)
+Interleaf::Error Interleaf::Read(const char *f)
 {
   std::ifstream is(f);
+  if (!is.is_open() || !is.good()) {
+    return ERROR_IO;
+  }
+  return Read(is);
+}
+
+Interleaf::Error Interleaf::Write(const char *f) const
+{
+  std::ofstream os(f);
+  if (!os.is_open() || !os.good()) {
+    return ERROR_IO;
+  }
+  return Write(os);
+}
+
+#ifdef _WIN32
+Interleaf::Error Interleaf::Read(const wchar_t *f)
+{
+  std::istream is(f);
   if (!is.is_open() || !is.good()) {
     return false;
   }
   return Read(is);
 }
 
-bool Interleaf::Read(const wchar_t *f)
+Interleaf::Error Interleaf::Write(const wchar_t *f) const
 {
-  std::ifstream is(f);
-  if (!is.is_open() || !is.good()) {
-    return false;
-  }
-  return Read(is);
-}
-
-/*bool Interleaf::Write(const char *f) const
-{
-  std::ofstream os(f);
+  std::ostream os(f);
   if (!os.is_open() || !os.good()) {
     return false;
   }
   return Write(os);
 }
+#endif
 
-bool Interleaf::Write(const wchar_t *f) const
-{
-  std::ofstream os(f);
-  if (!os.is_open() || !os.good()) {
-    return false;
-  }
-  return Write(os);
-}*/
-
-inline std::string PrintU32AsString(uint32_t u)
-{
-  return std::string((const char *) &u, sizeof(u));
-}
-
-bool Interleaf::ReadChunk(Core *parent, std::ifstream &is)
+Interleaf::Error Interleaf::ReadChunk(Core *parent, std::istream &is, Info *info)
 {
   uint32_t offset = is.tellg();
   uint32_t id = ReadU32(is);
   uint32_t size = ReadU32(is);
   uint32_t end = uint32_t(is.tellg()) + size;
 
-  std::cout << PrintU32AsString(id)
-            << " Offset: 0x" << std::hex << offset
-            << " Size: " << std::dec << size << std::endl;
+  info->SetType(id);
+  info->SetOffset(offset);
+  info->SetSize(size);
 
-  switch (static_cast<SI::Type>(id)) {
-  case SI::RIFF:
+  std::stringstream desc;
+
+  switch (static_cast<RIFF::Type>(id)) {
+  case RIFF::RIFF_:
   {
     // Require RIFF type to be OMNI
     uint32_t riff_type = ReadU32(is);
-    std::cout << "  Type: " << PrintU32AsString(riff_type) << std::endl;
     if (riff_type != RIFF::OMNI) {
-      return false;
+      return ERROR_INVALID_INPUT;
     }
+
+    desc << "Type: " << RIFF::PrintU32AsString(riff_type);
     break;
   }
-  case SI::MxHd:
+  case RIFF::MxHd:
   {
     m_Version = ReadU32(is);
-    std::cout << "  Version: " << m_Version << std::endl;
+    desc << "Version: " << m_Version << std::endl;
 
     m_BufferSize = ReadU32(is);
-    std::cout << "  Buffer Size: " << m_BufferSize << std::endl;
+    desc << "Buffer Size: 0x" << std::hex << m_BufferSize;
 
-    if (m_Version < 0x00020002) {
+    if (m_Version == 0x00020002) {
       m_BufferCount = ReadU32(is);
-      std::cout << "  Buffer Count: " << m_BufferCount << std::endl;
+      desc << std::endl << "Buffer Count: " << std::dec << m_BufferCount << std::endl;
     }
     break;
   }
-  case SI::pad_:
+  case RIFF::pad_:
     is.seekg(size, std::ios::cur);
     break;
-  case SI::MxOf:
+  case RIFF::MxOf:
   {
-    m_OffsetCount = ReadU32(is);
-    std::cout << "  Count: " << m_OffsetCount << std::endl;
+    uint32_t offset_count = ReadU32(is);
 
-    uint32_t i = 0;
-    while (is.tellg() < end) {
-      uint32_t offset = ReadU32(is);
-      std::cout << "    " << i << ": 0x" << std::hex << offset << std::endl;
-      m_OffsetTable.push_back(offset);
-      i++;
+    desc << "Count: " << offset_count;
+
+    uint32_t real_count = (size - sizeof(uint32_t)) / sizeof(uint32_t);
+    m_ObjectList.resize(real_count);
+    for (uint32_t i = 0; i < real_count; i++) {
+      Object *o = new Object();
+      parent->AppendChild(o);
+
+      uint32_t choffset = ReadU32(is);
+      m_ObjectList[i] = choffset;
+      desc << std::endl << i << ": 0x" << std::hex << choffset;
     }
     break;
   }
-  case SI::LIST:
+  case RIFF::LIST:
   {
     uint32_t list_type = ReadU32(is);
-    std::cout << "  Type: " << PrintU32AsString(list_type) << std::endl;
+    desc << "Type: " << RIFF::PrintU32AsString(list_type) << std::endl;
     uint32_t list_count = 0;
-    if (list_type == SI::MxCh) {
+    if (list_type == RIFF::MxCh) {
       list_count = ReadU32(is);
-      std::cout << "  Count: " << list_count << std::endl;
+      desc << "Count: " << list_count << std::endl;
     }
     break;
   }
-  case SI::MxSt:
-  case SI::MxDa:
+  case RIFF::MxSt:
+  case RIFF::MxDa:
+  case RIFF::WAVE:
+  case RIFF::fmt_:
+  case RIFF::data:
+  case RIFF::OMNI:
     // Types with no data
     break;
-  case SI::MxOb:
+  case RIFF::MxOb:
   {
-    Object *o = ReadObject(is);
-    parent->AppendChild(o);
-    m_ObjectIndexTable[o->id()] = o;
+    Object *o = NULL;
+
+    for (size_t i=0; i<m_ObjectList.size(); i++) {
+      if (m_ObjectList[i] == offset-kMinimumChunkSize) {
+        o = static_cast<Object*>(GetChildAt(i));
+        break;
+      }
+    }
+
+    if (!o) {
+      o = new Object();
+      parent->AppendChild(o);
+    }
+
+    ReadObject(is, o, desc);
+
+    info->SetObjectID(o->id());
+
+    m_ObjectIDTable[o->id()] = o;
+
     parent = o;
     break;
   }
-  case SI::MxCh:
+  case RIFF::MxCh:
   {
     uint16_t flags = ReadU16(is);
+    desc << "Flags: 0x" << std::hex << flags << std::endl;
+
     uint32_t object = ReadU32(is);
+    desc << "Object: " << std::dec << object << std::endl;
+
     uint32_t time = ReadU32(is);
+    desc << "Time: " << time << std::endl;
+
     uint32_t data_sz = ReadU32(is);
+    desc << "Size: " << data_sz << std::endl;
+
     bytearray data = ReadBytes(is, size - MxCh::HEADER_SIZE);
 
-    Object *o = m_ObjectIndexTable.at(object);
-    if (!o) {
-      return false;
-    }
-    o->data_.push_back(data);
-    break;
-  }
-  }
+    info->SetObjectID(object);
+    info->SetData(data);
 
-  std::cout << "Reading children at 0x" << std::hex << is.tellg() << std::endl;
+    if (!(flags & MxCh::FLAG_END)) {
+      Object *o = m_ObjectIDTable.at(object);
+      if (!o) {
+        return ERROR_INVALID_INPUT;
+      }
+
+      if (flags & MxCh::FLAG_SPLIT && o->last_chunk_split_) {
+        o->data_.back().append(data);
+      } else {
+        o->data_.push_back(data);
+        o->last_chunk_split_ = (flags & MxCh::FLAG_SPLIT);
+      }
+      break;
+    }
+  }
+  }
 
   // Assume any remaining data is this chunk's children
-  while (is.good() && (size_t(is.tellg()) + 4) < end) {
+  while (is.good() && (size_t(is.tellg()) + kMinimumChunkSize) < end) {
     // Check alignment, if there's not enough room to for another segment, skip ahead
     if (m_BufferSize > 0) {
       uint32_t offset_in_buffer = is.tellg()%m_BufferSize;
-      if (offset_in_buffer + sizeof(uint32_t)*2 > m_BufferSize) {
+      if (offset_in_buffer + kMinimumChunkSize > m_BufferSize) {
         is.seekg(m_BufferSize-offset_in_buffer, std::ios::cur);
       }
     }
 
     // Read next child
-    if (!ReadChunk(parent, is)) {
-      return false;
+    Info *subinfo = new Info();
+    info->AppendChild(subinfo);
+    Error e = ReadChunk(parent, is, subinfo);
+    if (e != ERROR_SUCCESS) {
+      return e;
     }
   }
+
+  info->SetDescription(desc.str());
 
   if (is.tellg() < end) {
     is.seekg(end, std::ios::beg);
@@ -182,315 +233,294 @@ bool Interleaf::ReadChunk(Core *parent, std::ifstream &is)
     is.seekg(1, std::ios::cur);
   }
 
-  return true;
+  return ERROR_SUCCESS;
 }
 
-Object *Interleaf::ReadObject(std::ifstream &is)
+Object *Interleaf::ReadObject(std::istream &is, Object *o, std::stringstream &desc)
 {
-  Object *o = new Object();
-
   o->type_ = static_cast<MxOb::Type>(ReadU16(is));
-  std::cout << "  Type: " << o->type_ << std::endl;
+  desc << "Type: " << o->type_ << std::endl;
   o->presenter_ = ReadString(is);
-  std::cout << "  Presenter: " << o->presenter_ << std::endl;
+  desc << "Presenter: " << o->presenter_ << std::endl;
   o->unknown1_ = ReadU32(is);
-  std::cout << "  Unknown1: " << o->unknown1_ << std::endl;
+  desc << "Unknown1: " << o->unknown1_ << std::endl;
   o->name_ = ReadString(is);
-  std::cout << "  Name: " << o->name_ << std::endl;
+  desc << "Name: " << o->name_ << std::endl;
   o->id_ = ReadU32(is);
-  std::cout << "  ID: " << o->id_ << std::endl;
+  desc << "ID: " << o->id_ << std::endl;
   o->flags_ = ReadU32(is);
-  std::cout << "  Flags: " << o->flags_ << std::endl;
+  desc << "Flags: " << o->flags_ << std::endl;
   o->unknown4_ = ReadU32(is);
-  std::cout << "  Unknown4: " << o->unknown4_ << std::endl;
+  desc << "Unknown4: " << o->unknown4_ << std::endl;
   o->duration_ = ReadU32(is);
-  std::cout << "  Duration: " << o->duration_ << std::endl;
+  desc << "Duration: " << o->duration_ << std::endl;
   o->loops_ = ReadU32(is);
-  std::cout << "  Loops: " << o->loops_ << std::endl;
+  desc << "Loops: " << o->loops_ << std::endl;
   o->position_ = ReadVector3(is);
-  std::cout << "  Position: " << o->position_.x << " " << o->position_.y << " " << o->position_.z << std::endl;
+  desc << "Position: " << o->position_.x << " " << o->position_.y << " " << o->position_.z << std::endl;
   o->direction_ = ReadVector3(is);
-  std::cout << "  Direction: " << o->direction_.x << " " << o->direction_.y << " " << o->direction_.z << std::endl;
+  desc << "Direction: " << o->direction_.x << " " << o->direction_.y << " " << o->direction_.z << std::endl;
   o->up_ = ReadVector3(is);
-  std::cout << "  Up: " << o->up_.x << " " << o->up_.y << " " << o->up_.z << std::endl;
+  desc << "Up: " << o->up_.x << " " << o->up_.y << " " << o->up_.z << std::endl;
 
   uint16_t extra_sz = ReadU16(is);
-  std::cout << "  Extra Size: " << extra_sz << std::endl;
+  desc << "Extra Size: " << extra_sz << std::endl;
   o->extra_ = ReadBytes(is, extra_sz);
 
   if (o->type_ != MxOb::Presenter && o->type_ != MxOb::World) {
     o->filename_ = ReadString(is);
-    std::cout << "  Filename: " << o->filename_ << std::endl;
+    desc << "Filename: " << o->filename_ << std::endl;
     o->unknown26_ = ReadU32(is);
-    std::cout << "  Unknown26: " << o->unknown26_ << std::endl;
+    desc << "Unknown26: " << o->unknown26_ << std::endl;
     o->unknown27_ = ReadU32(is);
-    std::cout << "  Unknown27: " << o->unknown27_ << std::endl;
+    desc << "Unknown27: " << o->unknown27_ << std::endl;
     o->unknown28_ = ReadU32(is);
-    std::cout << "  Unknown28: " << o->unknown28_ << std::endl;
+    desc << "Unknown28: " << o->unknown28_ << std::endl;
     o->filetype_ = static_cast<MxOb::FileType>(ReadU32(is));
-    std::cout << "  File Type: " << PrintU32AsString(o->filetype_) << std::endl;
+    desc << "File Type: " << RIFF::PrintU32AsString(o->filetype_) << std::endl;
     o->unknown29_ = ReadU32(is);
-    std::cout << "  Unknown29: " << o->unknown29_ << std::endl;
+    desc << "Unknown29: " << o->unknown29_ << std::endl;
     o->unknown30_ = ReadU32(is);
-    std::cout << "  Unknown30: " << o->unknown30_ << std::endl;
+    desc << "Unknown30: " << o->unknown30_ << std::endl;
 
     if (o->filetype_ == MxOb::WAV) {
       o->unknown31_ = ReadU32(is);
-      std::cout << "  Unknown31: " << o->unknown31_ << std::endl;
+      desc << "Unknown31: " << o->unknown31_ << std::endl;
     }
   }
-
-  //std::cout << "Next ID: 0x" << std::hex << is.tellg() << " ";
-  //std::cout << PrintU32AsString(ReadU32(is));
-  //std::cout << " After: 0x" << std::hex << is.tellg() << std::endl;
-  //is.seekg(-4, std::ios::cur);
 
   return o;
 }
 
-bool Interleaf::Read(std::ifstream &is)
+Interleaf::Error Interleaf::Read(std::istream &is)
 {
   Clear();
-  return ReadChunk(this, is);
+  return ReadChunk(this, is, &m_Info);
 }
 
-/*bool Interleaf::Parse(Chunk *riff)
+Interleaf::Error Interleaf::Write(std::ostream &os) const
 {
-  if (riff->id() != Chunk::TYPE_RIFF) {
-    return false;
+  if (m_BufferSize == 0) {
+    LogError() << "Buffer size must be set to write" << std::endl;
+    return ERROR_INVALID_BUFFER_SIZE;
   }
 
-  Chunk *hd = riff->FindChildWithType(Chunk::TYPE_MxHd);
-  if (!hd) {
-    return false;
-  }
+  RIFF::Chk riff = RIFF::BeginChunk(os, RIFF::RIFF_);
+  WriteU32(os, RIFF::OMNI);
 
-  version_ = hd->data("Version");
-  if (version_ == 0) {
-    // Unknown version
-    return false;
-  }
+  std::ios::pos_type offset_table_pos;
 
-  buffer_size_ = hd->data("BufferSize");
-  buffer_count_ = hd->data("BufferCount");
+  {
+    // MxHd
+    RIFF::Chk mxhd = RIFF::BeginChunk(os, RIFF::MxHd);
 
-  Chunk *of = riff->FindChildWithType(Chunk::TYPE_MxOf);
-  if (!of) {
-    return false;
-  }
+    WriteU32(os, m_Version);
+    WriteU32(os, m_BufferSize);
 
-  const Data &offset_data = of->data("Offsets");
-  const uint32_t *offset_table = reinterpret_cast<const uint32_t *>(offset_data.data());
-  size_t offset_count = offset_data.size() / sizeof(uint32_t);
-  DeleteChildren();
-  for (size_t i=0; i<offset_count; i++) {
-    if (offset_table[i]) {
-      Chunk *st = riff->FindChildWithOffset(offset_table[i]);
-      if (!ParseStream(st)) {
-        return false;
-      }
-    } else {
-      Object *nullobj = new Object();
-      AppendChild(nullobj);
+    if (m_Version == 0x00020002) {
+      WriteU32(os, m_BufferCount);
     }
+
+    RIFF::EndChunk(os, mxhd);
   }
 
-  return true;
-}
+  {
+    // MxOf
+    RIFF::Chk mxof = RIFF::BeginChunk(os, RIFF::MxOf);
 
-Chunk *Interleaf::Export() const
-{
-  Chunk *riff = new Chunk(Chunk::TYPE_RIFF);
-  riff->data("Format") = RIFF::OMNI;
+    WriteU32(os, GetChildCount());
 
-  Chunk *mxhd = new Chunk(Chunk::TYPE_MxHd);
-  mxhd->data("Version") = version_;
-  mxhd->data("BufferSize") = buffer_size_;
-  mxhd->data("BufferCount") = buffer_count_;
-  riff->AppendChild(mxhd);
+    offset_table_pos = os.tellp();
 
-  Chunk *mxof = new Chunk(Chunk::TYPE_MxOf);
+    for (size_t i = 0; i < GetChildCount(); i++) {
+      WriteU32(os, 0);
+    }
 
-  // FIXME: This appears to not always be correct, sometimes an MxOf with only one entry will have
-  //        a count of 3, seemingly due to embedded objects (e.g. a movie with an SMK + WAV)?
-  uint32_t obj_count = this->GetChildCount();
-  for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
-    Object *obj = static_cast<Object*>(*it);
-    obj_count += obj->GetChildCount();
-  }
-  mxof->data("Count") = obj_count;
-
-  //        This however is correct.
-  mxof->data("Offsets") = bytearray(this->GetChildCount() * sizeof(uint32_t));
-
-  riff->AppendChild(mxof);
-
-  Chunk *list = new Chunk(Chunk::TYPE_LIST);
-  list->data("Format") = Chunk::TYPE_MxSt;
-  riff->AppendChild(list);
-
-  for (Children::const_iterator it=GetChildren().begin(); it!=GetChildren().end(); it++) {
-    list->AppendChild(ExportStream(static_cast<Object*>(*it)));
+    RIFF::EndChunk(os, mxof);
   }
 
-  // FIXME: Fill in MxOf table
-  // FIXME: Split MxCh chunks over alignment
+  {
+    // LIST
+    RIFF::Chk list_mxst = RIFF::BeginChunk(os, RIFF::LIST);
 
-  return riff;
-}
+    WriteU32(os, RIFF::MxSt);
 
-bool Interleaf::ParseStream(Chunk *chunk)
-{
-  if (chunk->type() != Chunk::TYPE_MxSt) {
-    return false;
-  }
+    for (size_t i = 0; i < GetChildCount(); i++) {
+      Object *child = static_cast<Object*>(GetChildAt(i));
 
-  Chunk *obj_chunk = static_cast<Chunk*>(chunk->GetChildAt(0));
-  if (!obj_chunk) {
-    return false;
-  }
+      uint32_t mxst_offset = os.tellp();
 
-  Object *obj = new Object();
-  if (!obj->Parse(obj_chunk)) {
-    return false;
-  }
+      os.seekp(size_t(offset_table_pos) + i * sizeof(uint32_t));
+      WriteU32(os, mxst_offset);
+      os.seekp(mxst_offset);
 
-  AppendChild(obj);
+      // MxSt
+      RIFF::Chk mxst = RIFF::BeginChunk(os, RIFF::MxSt);
 
-  Chunk *list = static_cast<Chunk*>(chunk->GetChildAt(1));
-  if (list) {
-    typedef std::map<uint32_t, Object::ChunkedData> ChunkMap;
-    ChunkMap data;
+      {
+        // MxOb
+        WriteObject(os, child);
+      }
 
-    uint32_t joining_chunk = 0;
+      {
+        // LIST
+        RIFF::Chk list_mxda = RIFF::BeginChunk(os, RIFF::LIST);
 
-    for (Children::const_iterator it=list->GetChildren().begin(); it!=list->GetChildren().end(); it++) {
-      Chunk *mxch = static_cast<Chunk*>(*it);
-      if (mxch->id() == Chunk::TYPE_pad_) {
-        // Ignore this chunk
-      } else if (mxch->id() == Chunk::TYPE_MxCh) {
-        uint16_t flags = mxch->data("Flags");
-        if (!(flags & MxCh::FLAG_END)) {
-          uint32_t obj_id = mxch->data("Object");
-          const Data &chunk_data = mxch->data("Data");
+        WriteU32(os, RIFF::MxDa);
 
-          // For split chunks, join them together
-          if (joining_chunk > 0) {
-            data[obj_id].back().append(chunk_data);
-            if (data[obj_id].back().size() == joining_chunk) {
-              joining_chunk = 0;
-            }
-          } else {
-            if (flags & MxCh::FLAG_SPLIT) {
-              joining_chunk = mxch->data("DataSize");
-            }
-
-            data[obj_id].push_back(chunk_data);
-          }
+        // First, interleave headers
+        std::vector<Object*> objects;
+        objects.reserve(child->GetChildCount() + 1);
+        objects.push_back(child);
+        for (size_t j=0; j<child->GetChildCount(); j++) {
+          objects.push_back(static_cast<Object*>(child->GetChildAt(j)));
         }
+
+        InterleaveObjects(os, objects);
+
+        RIFF::EndChunk(os, list_mxda);
       }
+
+      RIFF::EndChunk(os, mxst);
     }
 
-    for (ChunkMap::const_iterator it=data.begin(); it!=data.end(); it++) {
-      Object *o = obj->FindSubObjectWithID(it->first);
-      if (o) {
-        o->SetChunkedData(it->second);
-      } else {
-        std::cout << "Failed to find object with ID " << it->first << std::endl;
-      }
+    // Fill remainder with padding
+    if (os.tellp()%m_BufferSize != 0) {
+      uint32_t current_buf = os.tellp() / m_BufferSize;
+      uint32_t target_sz = (current_buf + 1) * m_BufferSize;
+
+      WritePadding(os, target_sz - os.tellp());
+    }
+
+    RIFF::EndChunk(os, list_mxst);
+  }
+
+  RIFF::EndChunk(os, riff);
+
+  return ERROR_SUCCESS;
+}
+
+void Interleaf::WriteObject(std::ostream &os, const Object *o) const
+{
+  RIFF::Chk mxob = RIFF::BeginChunk(os, RIFF::MxOb);
+
+  WriteU16(os, o->type_);
+  WriteString(os, o->presenter_);
+  WriteU32(os, o->unknown1_);
+  WriteString(os, o->name_);
+  WriteU32(os, o->id_);
+  WriteU32(os, o->flags_);
+  WriteU32(os, o->unknown4_);
+  WriteU32(os, o->duration_);
+  WriteU32(os, o->loops_);
+  WriteVector3(os, o->position_);
+  WriteVector3(os, o->direction_);
+  WriteVector3(os, o->up_);
+
+  WriteU16(os, o->extra_.size());
+  WriteBytes(os, o->extra_);
+
+  if (o->type_ != MxOb::Presenter && o->type_ != MxOb::World) {
+    WriteString(os, o->filename_);
+    WriteU32(os, o->unknown26_);
+    WriteU32(os, o->unknown27_);
+    WriteU32(os, o->unknown28_);
+    WriteU32(os, o->filetype_);
+    WriteU32(os, o->unknown29_);
+    WriteU32(os, o->unknown30_);
+
+    if (o->filetype_ == MxOb::WAV) {
+      WriteU32(os, o->unknown31_);
     }
   }
 
-  return true;
+  if (o->HasChildren()) {
+    // Child list
+    RIFF::Chk list_mxch = RIFF::BeginChunk(os, RIFF::LIST);
+
+    WriteU32(os, RIFF::MxCh);
+    WriteU32(os, o->GetChildCount());
+
+    for (size_t i = 0; i < o->GetChildCount(); i++) {
+      WriteObject(os, static_cast<Object*>(o->GetChildAt(i)));
+    }
+
+    RIFF::EndChunk(os, list_mxch);
+  }
+
+  RIFF::EndChunk(os, mxob);
 }
 
 struct ChunkStatus
 {
-  ChunkStatus()
-  {
-    object = NULL;
-    index = 0;
-    time = 0;
-    end_chunk = false;
-  }
-
   Object *object;
   size_t index;
   uint32_t time;
   bool end_chunk;
 };
 
-Chunk *Interleaf::ExportStream(Object *obj) const
+void Interleaf::InterleaveObjects(std::ostream &os, const std::vector<Object *> &objects) const
 {
-  Chunk *mxst = new Chunk(Chunk::TYPE_MxSt);
+  std::vector<ChunkStatus> status(objects.size());
 
-  Chunk *mxob = obj->Export();
-  mxst->AppendChild(mxob);
-
-  Chunk *chunklst = new Chunk(Chunk::TYPE_LIST);
-  chunklst->data("Format") = Chunk::TYPE_MxDa;
-  mxst->AppendChild(chunklst);
-
-  // Set up chunking status vector
-  std::vector<ChunkStatus> chunk_status(obj->GetChildCount() + 1);
-  chunk_status[0].object = obj;
-  for (size_t i=0; i<obj->GetChildCount(); i++) {
-    chunk_status[i+1].object = static_cast<Object*>(obj->GetChildAt(i));
+  // Set up status vector
+  for (size_t i=0; i<objects.size(); i++) {
+    status[i].object = objects.at(i);
+    status[i].index = 0;
+    status[i].time = 0;
+    status[i].end_chunk = false;
   }
 
-  // First, interleave all headers (first chunk)
-  for (std::vector<ChunkStatus>::iterator it=chunk_status.begin(); it!=chunk_status.end(); it++) {
-    Object *working_obj = it->object;
-    if (!working_obj->data().empty()) {
-      chunklst->AppendChild(ExportMxCh(0, working_obj->id(), 0, working_obj->data().front()));
+  // First, interleave headers
+  for (size_t i=0; i<status.size(); i++) {
+    ChunkStatus &s = status[i];
+    Object *o = s.object;
+    if (!o->data().empty()) {
+      WriteSubChunk(os, 0, o->id(), 0xFFFFFFFF, o->data().front());
+      s.index++;
     }
-    it->index++;
   }
 
-  // Next, interleave everything by time
+  // Next, interleave the rest based on time
   while (true) {
     // Find next chunk
-    ChunkStatus *status = NULL;
+    ChunkStatus *s = NULL;
 
-    for (std::vector<ChunkStatus>::iterator it=chunk_status.begin(); it!=chunk_status.end(); it++) {
+    for (std::vector<ChunkStatus>::iterator it=status.begin(); it!=status.end(); it++) {
       // Check if we've already written all these chunks
       if (it->index >= it->object->data().size()) {
-        if (!it->end_chunk) {
-          chunklst->AppendChild(ExportMxCh(MxCh::FLAG_END, it->object->id(), it->time));
-          it->end_chunk = true;
-        }
         continue;
       }
 
       // Find earliest chunk to write
-      if (!status || it->time < status->time) {
-        status = &(*it);
+      if (!s || it->time < s->time) {
+        s = &(*it);
       }
     }
 
-    if (!status) {
+    if (!s) {
       // Assume chunks are all done
       break;
     }
 
-    Object *working_obj = status->object;
-    const bytearray &data = working_obj->data().at(status->index);
+    Object *obj = s->object;
+    const bytearray &data = obj->data().at(s->index);
 
-    chunklst->AppendChild(ExportMxCh(0, working_obj->id(), status->time, data));
+    WriteSubChunk(os, 0, obj->id(), s->time, data);
 
-    status->index++;
+    s->index++;
 
     // Increment time
-    switch (working_obj->filetype()) {
+    switch (obj->filetype()) {
     case MxOb::WAV:
     {
-      const WAVFmt *fmt = working_obj->GetFileHeader().cast<WAVFmt>();
-      status->time += (data.size() * 1000) / (fmt->BitsPerSample/8) / fmt->Channels / fmt->SampleRate;
+      const WAVFmt *fmt = obj->GetFileHeader().cast<WAVFmt>();
+      s->time += round(double(data.size() * 1000) / (fmt->BitsPerSample/8) / fmt->Channels / fmt->SampleRate);
       break;
     }
     case MxOb::SMK:
     {
-      int32_t frame_rate = working_obj->GetFileHeader().cast<SMK2>()->FrameRate;
+      int32_t frame_rate = obj->GetFileHeader().cast<SMK2>()->FrameRate;
       int32_t fps;
       if (frame_rate > 0) {
         fps = 1000/frame_rate;
@@ -499,37 +529,64 @@ Chunk *Interleaf::ExportStream(Object *obj) const
       } else {
         fps = 10;
       }
-      status->time += 1000/fps;
+      s->time += 1000/fps;
       break;
     }
     case MxOb::FLC:
-      status->time += working_obj->GetFileHeader().cast<FLIC>()->speed;
+      s->time += obj->GetFileHeader().cast<FLIC>()->speed;
       break;
     case MxOb::STL:
     case MxOb::OBJ:
       // Unaffected by time
       break;
     }
-  };
-
-  for (size_t i=1; i<chunk_status.size(); i++) {
-    const ChunkStatus &s = chunk_status.at(i);
-    chunklst->AppendChild(ExportMxCh(MxCh::FLAG_END, s.object->id(), s.time));
   }
-  chunklst->AppendChild(ExportMxCh(MxCh::FLAG_END, chunk_status.front().object->id(), chunk_status.front().time));
 
-  return mxst;
+  for (size_t i=1; i<status.size(); i++) {
+    const ChunkStatus &s = status.at(i);
+    WriteSubChunk(os, MxCh::FLAG_END, s.object->id(), s.time);
+  }
+  WriteSubChunk(os, MxCh::FLAG_END, status.front().object->id(), status.front().time);
 }
 
-Chunk *Interleaf::ExportMxCh(uint16_t flags, uint32_t object_id, uint32_t time, const bytearray &data) const
+void Interleaf::WriteSubChunk(std::ostream &os, uint16_t flags, uint32_t object, uint32_t time, const bytearray &data) const
 {
-  Chunk *mxch = new Chunk(Chunk::TYPE_MxCh);
-  mxch->data("Flags") = flags;
-  mxch->data("Object") = object_id;
-  mxch->data("Time") = time;
-  mxch->data("DataSize") = data.size();
-  mxch->data("Data") = data;
-  return mxch;
-}*/
+  uint32_t total_sz = data.size() + MxCh::HEADER_SIZE + kMinimumChunkSize;
+
+  uint32_t start_buffer = os.tellp() / m_BufferSize;
+  uint32_t stop_buffer = (uint32_t(os.tellp()) + total_sz) / m_BufferSize;
+
+  if (start_buffer != stop_buffer) {
+    // This chunk won't fit in our buffer alignment. We must make a decision to either insert
+    // padding or split the clip.
+    WritePadding(os, (stop_buffer * m_BufferSize) - os.tellp());
+  }
+
+  RIFF::Chk mxch = RIFF::BeginChunk(os, RIFF::MxCh);
+
+  WriteU16(os, flags);
+  WriteU32(os, object);
+  WriteU32(os, time);
+  WriteU32(os, data.size());
+  WriteBytes(os, data);
+
+  RIFF::EndChunk(os, mxch);
+}
+
+void Interleaf::WritePadding(std::ostream &os, uint32_t size) const
+{
+  if (size < kMinimumChunkSize) {
+    return;
+  }
+
+  size -= kMinimumChunkSize;
+
+  WriteU32(os, RIFF::pad_);
+  WriteU32(os, size);
+
+  bytearray b(size);
+  b.fill(0xCD);
+  WriteBytes(os, b);
+}
 
 }

@@ -1,10 +1,33 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <cstdio>
 #include <cstring>
 #include <map>
+#include <streambuf>
 #include <string>
+#include <ostream>
 #include <vector>
+
+#if defined(__GNUC__)
+#define LIBWEAVER_PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#elif defined(_MSC_VER)
+#define LIBWEAVER_PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#endif
+
+#ifdef _MSC_VER
+#define LIBWEAVER_EXPORT __declspec(dllexport)
+#else
+#define LIBWEAVER_EXPORT
+#endif
+
+#if defined(_WIN32)
+#define LIBWEAVER_OS_WINDOWS
+#elif defined(__APPLE__)
+#define LIBWEAVER_OS_MACOS
+#elif defined(__linux__)
+#define LIBWEAVER_OS_LINUX
+#endif
 
 #if defined(_MSC_VER) && (_MSC_VER < 1600)
 // Declare types for MSVC versions less than 2010 (1600) which lacked a stdint.h
@@ -29,6 +52,11 @@ public:
   bytearray(size_t size)
   {
     resize(size);
+  }
+  bytearray(const char *data, size_t size)
+  {
+    resize(size);
+    memcpy(this->data(), data, size);
   }
 
   template <typename T>
@@ -55,6 +83,27 @@ public:
   {
     memset(this->data(), c, this->size());
   }
+
+};
+
+LIBWEAVER_EXPORT class memorybuf : public std::streambuf
+{
+public:
+  memorybuf(){}
+
+  virtual int_type overflow(int_type c)
+  {
+    if (c != EOF) {
+      char c2 = c;
+      m_Internal.append(&c2, 1);
+    }
+    return c;
+  }
+
+  const bytearray &data() const { return m_Internal; }
+
+private:
+  bytearray m_Internal;
 
 };
 

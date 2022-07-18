@@ -27,12 +27,11 @@ BitmapPanel::BitmapPanel(QWidget *parent)
 void BitmapPanel::OnOpeningData(void *data)
 {
   si::Object *o = static_cast<si::Object*>(data);
-
-  si::bytearray processed = o->GetNormalizedData();
-  QByteArray b(processed.data(), processed.size());
-  QBuffer buf(&b);
+  si::bytearray d = o->ExtractToMemory();
+  QByteArray b(d.data(), d.size());
+  QBuffer read_buf(&b);
   QImage img;
-  img.load(&buf, "BMP");
+  img.load(&read_buf, "BMP");
 
   img_lbl_->setPixmap(QPixmap::fromImage(img));
 

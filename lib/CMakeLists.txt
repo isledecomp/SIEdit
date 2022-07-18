@@ -1,9 +1,9 @@
 option(LIBWEAVER_BUILD_DOXYGEN "Build Doxygen documentation" OFF)
 
 set(LIBWEAVER_SOURCES
-  common.h
   core.cpp
   core.h
+  info.h
   interleaf.cpp
   interleaf.h
   object.cpp

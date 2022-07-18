@@ -3,27 +3,9 @@
 
 #include <fstream>
 
-#include "common.h"
 #include "types.h"
 
 namespace si {
-
-class SI
-{
-public:
-  enum Type
-  {
-    RIFF = 0x46464952,
-    LIST = 0x5453494c,
-    MxSt = 0x7453784d,
-    MxHd = 0x6448784d,
-    MxCh = 0x6843784d,
-    MxOf = 0x664f784d,
-    MxOb = 0x624f784d,
-    MxDa = 0x6144784d,
-    pad_ = 0x20646170
-  };
-};
 
 /**
  * @brief RIFF chunk type
@@ -35,9 +17,38 @@ public:
 class RIFF
 {
 public:
-  enum {
-    OMNI = 0x494e4d4f
+  enum Type {
+    RIFF_ = 0x46464952,
+    LIST = 0x5453494c,
+    MxSt = 0x7453784d,
+    MxHd = 0x6448784d,
+    MxCh = 0x6843784d,
+    MxOf = 0x664f784d,
+    MxOb = 0x624f784d,
+    MxDa = 0x6144784d,
+    pad_ = 0x20646170,
+    OMNI = 0x494e4d4f,
+    WAVE = 0x45564157,
+    fmt_ = 0x20746D66,
+    data = 0x61746164
   };
+
+  struct Chk
+  {
+    std::ios::pos_type size_position;
+    std::ios::pos_type data_start;
+  };
+
+  static Chk BeginChunk(std::ostream &os, uint32_t type);
+  static void EndChunk(std::ostream &os, const Chk &stat);
+
+  static inline std::string PrintU32AsString(uint32_t u)
+  {
+    return std::string((const char *) &u, sizeof(u));
+  }
+
+  static const char *GetTypeDescription(Type t);
+
 };
 
 /**
@@ -121,7 +132,7 @@ public:
 class pad_ : public RIFF
 {
 public:
-  static void WriteArbitraryPadding(std::ofstream &os, uint32_t size);
+  static void WriteArbitraryPadding(std::ostream &os, uint32_t size);
 };
 
 /**

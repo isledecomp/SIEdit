@@ -14,13 +14,18 @@ public:
 
   Object();
 
-  void SetChunkedData(const ChunkedData &cd) { data_ = cd; }
+#if defined(_WIN32)
+  LIBWEAVER_EXPORT bool ReplaceWithFile(const wchar_t *f);
+  LIBWEAVER_EXPORT bool ExtractToFile(const wchar_t *f) const;
+#endif
 
-  LIBWEAVER_EXPORT bytearray GetNormalizedData() const;
-  LIBWEAVER_EXPORT void SetNormalizedData(const bytearray &d);
+  LIBWEAVER_EXPORT bool ReplaceWithFile(const char *f);
+  LIBWEAVER_EXPORT bool ExtractToFile(const char *f) const;
 
-  LIBWEAVER_EXPORT static bytearray ToPackedData(MxOb::FileType filetype, const ChunkedData &chunks);
-  LIBWEAVER_EXPORT static ChunkedData ToChunkedData(MxOb::FileType filetype, const bytearray &chunks);
+  LIBWEAVER_EXPORT bool ReplaceWithFile(std::istream &is);
+  LIBWEAVER_EXPORT bool ExtractToFile(std::ostream &os) const;
+
+  LIBWEAVER_EXPORT bytearray ExtractToMemory() const;
 
   LIBWEAVER_EXPORT const bytearray &GetFileHeader() const;
   LIBWEAVER_EXPORT bytearray GetFileBody() const;
@@ -58,6 +63,10 @@ public:
   uint32_t unknown31_;
 
   ChunkedData data_;
+
+  bool last_chunk_split_;
+
+private:
 
 };
 

@@ -4,20 +4,12 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Multimedia)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Multimedia)
 
 set(PROJECT_SOURCES
-#  siview/chunkmodel.cpp
-#  siview/chunkmodel.h
-#  siview/panels/mxch.cpp
-#  siview/panels/mxch.h
-#  siview/panels/mxhd.cpp
-#  siview/panels/mxhd.h
-#  siview/panels/mxob.cpp
-#  siview/panels/mxob.h
-#  siview/panels/mxof.cpp
-#  siview/panels/mxof.h
-#  siview/panels/riff.cpp
-#  siview/panels/riff.h
-#  siview/siview.cpp
-#  siview/siview.h
+  siview/chunkmodel.cpp
+  siview/chunkmodel.h
+  siview/infopanel.cpp
+  siview/infopanel.h
+  siview/siview.cpp
+  siview/siview.h
 
   viewer/bitmappanel.cpp
   viewer/bitmappanel.h
