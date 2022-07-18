@@ -33,6 +33,8 @@ QVariant ChunkModel::data(const QModelIndex &index, int role) const
       return QString::fromLatin1(reinterpret_cast<const char *>(&c->GetType()), sizeof(uint32_t));
     case kColOffset:
       return QStringLiteral("0x%1").arg(QString::number(c->GetOffset(), 16).toUpper());
+    case kColSize:
+      return QStringLiteral("0x%1").arg(QString::number(c->GetSize(), 16).toUpper());
     case kColDesc:
       return QString::fromUtf8(RIFF::GetTypeDescription(static_cast<RIFF::Type>(c->GetType())));
     case kColObjectID:
@@ -57,6 +59,8 @@ QVariant ChunkModel::headerData(int section, Qt::Orientation orientation, int ro
       return tr("Type");
     case kColOffset:
       return tr("Offset");
+    case kColSize:
+      return tr("Size");
     case kColDesc:
       return tr("Description");
     case kColObjectID:

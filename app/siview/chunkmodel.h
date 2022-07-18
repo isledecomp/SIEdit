@@ -13,6 +13,7 @@ public:
   {
     kColType,
     kColOffset,
+    kColSize,
     kColDesc,
     kColObjectID,
 
