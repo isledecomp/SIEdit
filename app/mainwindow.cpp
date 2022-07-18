@@ -93,7 +93,7 @@ void MainWindow::InitializeMenuBar()
 
   file_menu->addSeparator();
 
-  file_menu->addAction(tr("&View SI File"), this, &MainWindow::ViewSIFile);
+  file_menu->addAction(tr("&View SI File"), this, &MainWindow::ViewSIFile, tr("Ctrl+I"));
 
   file_menu->addSeparator();
 
