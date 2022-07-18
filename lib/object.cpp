@@ -13,6 +13,26 @@ Object::Object()
   id_ = 0;
 }
 
+#ifdef _WIN32
+bool Object::ReplaceWithFile(const wchar_t *f)
+{
+  std::ifstream is(f);
+  if (!is.is_open() || !is.good()) {
+    return false;
+  }
+  return ReplaceWithFile(is);
+}
+
+bool Object::ExtractToFile(const wchar_t *f) const
+{
+  std::ofstream os(f);
+  if (!os.is_open() || !os.good()) {
+    return false;
+  }
+  return ExtractToFile(os);
+}
+#endif
+
 bool Object::ReplaceWithFile(const char *f)
 {
   std::ifstream is(f);

@@ -47,7 +47,7 @@ public:
     return std::string((const char *) &u, sizeof(u));
   }
 
-  static const char *GetTypeDescription(Type t);
+  LIBWEAVER_EXPORT static const char *GetTypeDescription(Type t);
 
 };
 

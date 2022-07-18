@@ -49,18 +49,18 @@ Interleaf::Error Interleaf::Write(const char *f) const
 #ifdef _WIN32
 Interleaf::Error Interleaf::Read(const wchar_t *f)
 {
-  std::istream is(f);
+  std::ifstream is(f);
   if (!is.is_open() || !is.good()) {
-    return false;
+    return ERROR_IO;
   }
   return Read(is);
 }
 
 Interleaf::Error Interleaf::Write(const wchar_t *f) const
 {
-  std::ostream os(f);
+  std::ofstream os(f);
   if (!os.is_open() || !os.good()) {
-    return false;
+    return ERROR_IO;
   }
   return Write(os);
 }

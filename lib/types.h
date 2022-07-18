@@ -120,7 +120,7 @@ public:
 
 };
 
-LIBWEAVER_EXPORT class memorybuf : public std::streambuf
+class memorybuf : public std::streambuf
 {
 public:
   memorybuf(){}
