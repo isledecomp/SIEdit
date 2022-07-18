@@ -3,6 +3,7 @@
 
 #include <fstream>
 
+#include "file.h"
 #include "types.h"
 
 namespace si {
@@ -39,8 +40,8 @@ public:
     std::ios::pos_type data_start;
   };
 
-  static Chk BeginChunk(std::ostream &os, uint32_t type);
-  static void EndChunk(std::ostream &os, const Chk &stat);
+  static Chk BeginChunk(FileBase *f, uint32_t type);
+  static void EndChunk(FileBase *f, const Chk &stat);
 
   static inline std::string PrintU32AsString(uint32_t u)
   {

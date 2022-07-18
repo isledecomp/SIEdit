@@ -120,27 +120,6 @@ public:
 
 };
 
-class memorybuf : public std::streambuf
-{
-public:
-  memorybuf(){}
-
-  virtual int_type overflow(int_type c)
-  {
-    if (c != EOF) {
-      char c2 = c;
-      m_Internal.append(&c2, 1);
-    }
-    return c;
-  }
-
-  const bytearray &data() const { return m_Internal; }
-
-private:
-  bytearray m_Internal;
-
-};
-
 class Vector3
 {
 public:

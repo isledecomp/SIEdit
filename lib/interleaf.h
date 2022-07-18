@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "core.h"
+#include "file.h"
 #include "info.h"
 #include "object.h"
 
@@ -32,24 +33,23 @@ public:
   LIBWEAVER_EXPORT Error Write(const wchar_t *f) const;
 #endif
 
-  Error Read(std::istream &is);
-  Error Write(std::ostream &os) const;
+  Error Read(FileBase *is);
+  Error Write(FileBase *os) const;
 
   Info *GetInformation() { return &m_Info; }
 
 private:
+  Error ReadChunk(Core *parent, FileBase *f, Info *info);
 
-  Error ReadChunk(Core *parent, std::istream &is, Info *info);
+  Object *ReadObject(FileBase *f, Object *o, std::stringstream &desc);
+  void WriteObject(FileBase *f, const Object *o) const;
 
-  Object *ReadObject(std::istream &is, Object *o, std::stringstream &desc);
-  void WriteObject(std::ostream &os, const Object *o) const;
+  void InterleaveObjects(FileBase *f, const std::vector<Object*> &objects) const;
 
-  void InterleaveObjects(std::ostream &os, const std::vector<Object*> &objects) const;
+  void WriteSubChunk(FileBase *f, uint16_t flags, uint32_t object, uint32_t time, const bytearray &data = bytearray()) const;
+  void WriteSubChunkInternal(FileBase *f, uint16_t flags, uint32_t object, uint32_t time, uint32_t data_sz, const bytearray &data) const;
 
-  void WriteSubChunk(std::ostream &os, uint16_t flags, uint32_t object, uint32_t time, const bytearray &data = bytearray()) const;
-  void WriteSubChunkInternal(std::ostream &os, uint16_t flags, uint32_t object, uint32_t time, uint32_t data_sz, const bytearray &data) const;
-
-  void WritePadding(std::ostream &os, uint32_t size) const;
+  void WritePadding(FileBase *f, uint32_t size) const;
 
   Info m_Info;
 

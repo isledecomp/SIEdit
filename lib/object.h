@@ -22,8 +22,8 @@ public:
   LIBWEAVER_EXPORT bool ReplaceWithFile(const char *f);
   LIBWEAVER_EXPORT bool ExtractToFile(const char *f) const;
 
-  LIBWEAVER_EXPORT bool ReplaceWithFile(std::istream &is);
-  LIBWEAVER_EXPORT bool ExtractToFile(std::ostream &os) const;
+  LIBWEAVER_EXPORT bool ReplaceWithFile(FileBase *f);
+  LIBWEAVER_EXPORT bool ExtractToFile(FileBase *f) const;
 
   LIBWEAVER_EXPORT bytearray ExtractToMemory() const;
 

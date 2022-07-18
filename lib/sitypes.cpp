@@ -92,32 +92,31 @@ const char *RIFF::GetTypeDescription(Type t)
   return "Unknown";
 }
 
-RIFF::Chk RIFF::BeginChunk(std::ostream &os, uint32_t type)
+RIFF::Chk RIFF::BeginChunk(FileBase *f, uint32_t type)
 {
   Chk stat;
 
-  WriteU32(os, type);
-  stat.size_position = os.tellp();
-  WriteU32(os, 0);
-  stat.data_start = os.tellp();
+  f->WriteU32(type);
+  stat.size_position = f->pos();
+  f->WriteU32(0);
+  stat.data_start = f->pos();
 
   return stat;
 }
 
-void RIFF::EndChunk(std::ostream &os, const Chk &stat)
+void RIFF::EndChunk(FileBase *f, const Chk &stat)
 {
-  std::ios::pos_type now = os.tellp();
+  std::ios::pos_type now = f->pos();
 
   uint32_t sz = now - stat.data_start;
 
-  os.seekp(stat.size_position);
-  WriteU32(os, sz);
+  f->seek(stat.size_position);
+  f->WriteU32(sz);
 
-  os.seekp(now);
+  f->seek(now);
 
   if (sz%2 == 1) {
-    char nullterm = 0;
-    os.write(&nullterm, 1);
+    f->WriteU8(0);
   }
 }
 
