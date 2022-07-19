@@ -138,6 +138,10 @@ bool Object::ReplaceWithFile(FileBase *f)
 
 bool Object::ExtractToFile(FileBase *f) const
 {
+  if (data_.empty()) {
+    return false;
+  }
+
   switch (this->filetype()) {
   case MxOb::WAV:
   {
