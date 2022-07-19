@@ -502,7 +502,7 @@ void MediaPanel::TimerUpdate()
 {
   float now = float(QDateTime::currentMSecsSinceEpoch() - m_PlaybackStart) * 0.001f;
   if (m_VideoStream) {
-    VideoUpdate(now);
+    VideoUpdate(now + m_PlaybackOffset);
 
     if (!m_SliderPressed && m_SwsFrame->pts != AV_NOPTS_VALUE) {
       float percent = float(m_SwsFrame->pts) / float(m_VideoStream->duration);
@@ -524,7 +524,10 @@ void MediaPanel::SliderPressed()
 void MediaPanel::SliderMoved(int i)
 {
   if (m_VideoStream) {
-    VideoUpdate(SliderValueToFloatSeconds(i, m_PlayheadSlider->maximum(), m_VideoStream));
+    float f = SliderValueToFloatSeconds(i, m_PlayheadSlider->maximum(), m_VideoStream);
+    m_PlaybackOffset = f;
+    m_PlaybackStart = QDateTime::currentMSecsSinceEpoch();
+    VideoUpdate(f);
   }
   if (m_AudioStream) {
     AudioSeek(SliderValueToFloatSeconds(i, m_PlayheadSlider->maximum(), m_AudioStream));
