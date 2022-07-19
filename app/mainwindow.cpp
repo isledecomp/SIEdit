@@ -55,11 +55,8 @@ MainWindow::MainWindow(QWidget *parent) :
   panel_blank_ = new Panel();
   config_stack_->addWidget(panel_blank_);
 
-  panel_wav_ = new WavPanel();
-  config_stack_->addWidget(panel_wav_);
-
-  panel_bmp_ = new BitmapPanel();
-  config_stack_->addWidget(panel_bmp_);
+  panel_media_ = new MediaPanel();
+  config_stack_->addWidget(panel_media_);
 
   InitializeMenuBar();
 
@@ -70,10 +67,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::OpenFilename(const QString &s)
 {
+  tree_->clearSelection();
+  SetPanel(panel_blank_, nullptr);
   model_.SetCore(nullptr);
 
   if (OpenInterleafFileInternal(this, &interleaf_, s)) {
+    //tree_->blockSignals(true);
     model_.SetCore(&interleaf_);
+//    tree_->blockSignals(false);
   }
 }
 
@@ -237,14 +238,12 @@ void MainWindow::SelectionChanged(const QModelIndex &index)
 
   if (c) {
     switch (c->filetype()) {
-    case MxOb::WAV:
-      p = panel_wav_;
-      break;
     case MxOb::STL:
-      p = panel_bmp_;
-      break;
+    case MxOb::WAV:
     case MxOb::SMK:
     case MxOb::FLC:
+      p = panel_media_;
+      break;
     case MxOb::OBJ:
       break;
     }

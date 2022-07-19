@@ -10,8 +10,7 @@
 
 #include "objectmodel.h"
 #include "panel.h"
-#include "viewer/bitmappanel.h"
-#include "viewer/wavpanel.h"
+#include "viewer/mediapanel.h"
 
 class MainWindow : public QMainWindow
 {
@@ -44,8 +43,7 @@ private:
   QGroupBox *action_grp_;
 
   Panel *panel_blank_;
-  WavPanel *panel_wav_;
-  BitmapPanel *panel_bmp_;
+  MediaPanel *panel_media_;
 
   ObjectModel model_;
   si::Interleaf interleaf_;
