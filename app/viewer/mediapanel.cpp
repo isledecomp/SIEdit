@@ -319,6 +319,7 @@ void MediaPanel::VideoUpdate(float t)
 
         if (ret == AVERROR_EOF) {
           Play(false);
+          m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
         }
         break;
       } else {
