@@ -58,6 +58,31 @@ MainWindow::MainWindow(QWidget *parent) :
   panel_media_ = new MediaPanel();
   config_stack_->addWidget(panel_media_);
 
+  properties_group_ = new QGroupBox();
+  config_layout->addWidget(properties_group_);
+
+  auto properties_layout = new QGridLayout(properties_group_);
+
+  {
+    int prow = 0;
+
+    properties_layout->addWidget(new QLabel(tr("Location")), prow, 0);
+
+    m_LocationEdit = new Vector3Edit();
+    connect(m_LocationEdit, &Vector3Edit::changed, this, &MainWindow::LocationChanged);
+    properties_layout->addWidget(m_LocationEdit, prow, 1);
+
+    prow++;
+
+    properties_layout->addWidget(new QLabel(tr("Start Time")), prow, 0);
+
+    start_time_edit_ = new QSpinBox();
+    start_time_edit_->setMinimum(0);
+    start_time_edit_->setMaximum(INT_MAX);
+    connect(start_time_edit_, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MainWindow::StartTimeChanged);
+    properties_layout->addWidget(start_time_edit_, prow, 1);
+  }
+
   InitializeMenuBar();
 
   splitter->setSizes({99999, 99999});
@@ -113,6 +138,12 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
   last_set_data_ = chunk;
 
   action_grp_->setEnabled(chunk);
+  properties_group_->setEnabled(chunk);
+
+  if (chunk) {
+    m_LocationEdit->SetValue(chunk->location_);
+    start_time_edit_->setValue(chunk->time_offset_);
+  }
 }
 
 void MainWindow::ExtractObject(si::Object *obj)
@@ -299,5 +330,19 @@ void MainWindow::ViewSIFile()
       v->setAttribute(Qt::WA_DeleteOnClose);
       v->show();
     }
+  }
+}
+
+void MainWindow::LocationChanged(const Vector3 &v)
+{
+  if (last_set_data_) {
+    last_set_data_->location_ = v;
+  }
+}
+
+void MainWindow::StartTimeChanged(int t)
+{
+  if (last_set_data_) {
+    last_set_data_->time_offset_ = t;
   }
 }

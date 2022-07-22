@@ -272,8 +272,8 @@ Object *Interleaf::ReadObject(FileBase *f, Object *o, std::stringstream &desc)
   desc << "Duration: " << o->duration_ << std::endl;
   o->loops_ = f->ReadU32();
   desc << "Loops: " << o->loops_ << std::endl;
-  o->position_ = f->ReadVector3();
-  desc << "Position: " << o->position_.x << " " << o->position_.y << " " << o->position_.z << std::endl;
+  o->location_ = f->ReadVector3();
+  desc << "Location: " << o->location_.x << " " << o->location_.y << " " << o->location_.z << std::endl;
   o->direction_ = f->ReadVector3();
   desc << "Direction: " << o->direction_.x << " " << o->direction_.y << " " << o->direction_.z << std::endl;
   o->up_ = f->ReadVector3();
@@ -429,7 +429,7 @@ void Interleaf::WriteObject(FileBase *f, const Object *o) const
   f->WriteU32(o->unknown4_);
   f->WriteU32(o->duration_);
   f->WriteU32(o->loops_);
-  f->WriteVector3(o->position_);
+  f->WriteVector3(o->location_);
   f->WriteVector3(o->direction_);
   f->WriteVector3(o->up_);
 

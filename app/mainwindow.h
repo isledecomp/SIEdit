@@ -10,6 +10,7 @@
 
 #include "objectmodel.h"
 #include "panel.h"
+#include "vector3edit.h"
 #include "viewer/mediapanel.h"
 
 class MainWindow : public QMainWindow
@@ -52,6 +53,12 @@ private:
 
   QString current_filename_;
 
+  QGroupBox *properties_group_;
+
+  Vector3Edit *m_LocationEdit;
+
+  QSpinBox *start_time_edit_;
+
 private slots:
   void NewFile();
   void OpenFile();
@@ -68,6 +75,9 @@ private slots:
   void ReplaceClicked();
 
   void ViewSIFile();
+
+  void LocationChanged(const si::Vector3 &v);
+  void StartTimeChanged(int t);
 
 };
 

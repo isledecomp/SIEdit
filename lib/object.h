@@ -49,7 +49,7 @@ public:
   uint32_t unknown4_;
   uint32_t duration_;
   uint32_t loops_;
-  Vector3 position_;
+  Vector3 location_;
   Vector3 direction_;
   Vector3 up_;
   bytearray extra_;

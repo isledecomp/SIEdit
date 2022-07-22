@@ -15,10 +15,16 @@ public:
   si::Vector3 GetValue() const;
   void SetValue(const si::Vector3 &xyz);
 
+signals:
+  void changed(const si::Vector3 &v);
+
 private:
   QDoubleSpinBox *x_edit_;
   QDoubleSpinBox *y_edit_;
   QDoubleSpinBox *z_edit_;
+
+private slots:
+  void internalChanged();
 
 };
 
