@@ -206,6 +206,10 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
       } else {
         o->data_.push_back(data);
 
+        if (o->data_.size() == 2) {
+          o->time_offset_ = time;
+        }
+
         if (flags & MxCh::FLAG_SPLIT) {
           m_JoiningProgress = data.size();
           m_JoiningSize = data_sz;
@@ -489,7 +493,7 @@ void Interleaf::InterleaveObjects(FileBase *f, const std::vector<Object *> &obje
   for (size_t i=0; i<objects.size(); i++) {
     status[i].object = objects.at(i);
     status[i].index = 0;
-    status[i].time = 0;
+    status[i].time = status[i].object->time_offset_;
   }
 
   // First, interleave headers

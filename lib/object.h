@@ -62,6 +62,8 @@ public:
   uint32_t unknown30_;
   uint32_t unknown31_;
 
+  uint32_t time_offset_;
+
   ChunkedData data_;
 
 private:
