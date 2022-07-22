@@ -29,7 +29,7 @@ public:
   std::string ReadString();
   bytearray ReadBytes(size_t size);
   Vector3 ReadVector3();
-  virtual size_t ReadData(char *data, size_t size) = 0;
+  virtual size_t ReadData(void *data, size_t size) = 0;
 
   void WriteU8(uint8_t u);
   void WriteU16(uint16_t u);
@@ -37,7 +37,7 @@ public:
   void WriteString(const std::string &s);
   void WriteBytes(const bytearray &b);
   void WriteVector3(const Vector3 &b);
-  virtual size_t WriteData(const char *data, size_t size) = 0;
+  virtual size_t WriteData(const void *data, size_t size) = 0;
 
   virtual void Close() {}
 
@@ -75,8 +75,8 @@ public:
   virtual bool atEnd();
 
   virtual void Close();
-  virtual size_t ReadData(char *data, size_t size);
-  virtual size_t WriteData(const char *data, size_t size);
+  virtual size_t ReadData(void *data, size_t size);
+  virtual size_t WriteData(const void *data, size_t size);
 
 private:
   std::fstream m_Stream;
@@ -97,8 +97,8 @@ public:
 
   const bytearray &data() const { return m_Internal; }
 
-  virtual size_t ReadData(char *data, size_t size);
-  virtual size_t WriteData(const char *data, size_t size);
+  virtual size_t ReadData(void *data, size_t size);
+  virtual size_t WriteData(const void *data, size_t size);
 
 private:
   bytearray m_Internal;

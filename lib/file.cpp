@@ -95,66 +95,66 @@ void File::Close()
   m_Stream.close();
 }
 
-size_t File::ReadData(char *data, size_t size)
+size_t File::ReadData(void *data, size_t size)
 {
   size_t before = this->pos();
-  m_Stream.read(data, size);
+  m_Stream.read((char *) data, size);
   return this->pos() - before;
 }
 
-size_t File::WriteData(const char *data, size_t size)
+size_t File::WriteData(const void *data, size_t size)
 {
   size_t before = this->pos();
-  m_Stream.write(data, size);
+  m_Stream.write((const char *) data, size);
   return this->pos() - before;
 }
 
 uint8_t FileBase::ReadU8()
 {
   uint8_t u;
-  ReadData((char *) &u, sizeof(u));
+  ReadData(&u, sizeof(u));
   return u;
 }
 
 void FileBase::WriteU8(uint8_t u)
 {
-  WriteData((const char *) &u, sizeof(u));
+  WriteData(&u, sizeof(u));
 }
 
 uint16_t FileBase::ReadU16()
 {
   uint16_t u;
-  ReadData((char *) &u, sizeof(u));
+  ReadData(&u, sizeof(u));
   return u;
 }
 
 void FileBase::WriteU16(uint16_t u)
 {
-  WriteData((const char *) &u, sizeof(u));
+  WriteData(&u, sizeof(u));
 }
 
 uint32_t FileBase::ReadU32()
 {
   uint32_t u;
-  ReadData((char *) &u, sizeof(u));
+  ReadData(&u, sizeof(u));
   return u;
 }
 
 void FileBase::WriteU32(uint32_t u)
 {
-  WriteData((const char *) &u, sizeof(u));
+  WriteData(&u, sizeof(u));
 }
 
 Vector3 FileBase::ReadVector3()
 {
   Vector3 u;
-  ReadData((char *) &u, sizeof(u));
+  ReadData(&u, sizeof(u));
   return u;
 }
 
 void FileBase::WriteVector3(const Vector3 &v)
 {
-  WriteData((const char *) &v, sizeof(v));
+  WriteData(&v, sizeof(v));
 }
 
 std::string FileBase::ReadString()
@@ -237,7 +237,7 @@ bool MemoryBuffer::atEnd()
   return m_Position == m_Internal.size();
 }
 
-size_t MemoryBuffer::ReadData(char *data, size_t size)
+size_t MemoryBuffer::ReadData(void *data, size_t size)
 {
   size = std::min(size, m_Internal.size() - m_Position);
   memcpy(data, m_Internal.data() + m_Position, size);
@@ -245,7 +245,7 @@ size_t MemoryBuffer::ReadData(char *data, size_t size)
   return size;
 }
 
-size_t MemoryBuffer::WriteData(const char *data, size_t size)
+size_t MemoryBuffer::WriteData(const void *data, size_t size)
 {
   size_t end = m_Position + size;
   if (end > m_Internal.size()) {
