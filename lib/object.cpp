@@ -128,6 +128,19 @@ bool Object::ReplaceWithFile(FileBase *f)
     }
     return true;
   }
+  case MxOb::STL:
+  {
+    BMP bmp;
+    f->ReadData(&bmp, sizeof(bmp));
+
+    bytearray info_header = f->ReadBytes(bmp.DataOffset - f->pos());
+    data_.push_back(info_header);
+
+    bytearray pixels = f->ReadBytes(bmp.FileSize - f->pos());
+    data_.push_back(pixels);
+
+    return true;
+  }
   default:
     LogWarning() << "Don't yet know how to chunk type " << RIFF::PrintU32AsString(this->filetype()) << std::endl;
     break;
@@ -172,28 +185,23 @@ bool Object::ExtractToFile(FileBase *f) const
   }
   case MxOb::STL:
   {
-    static const uint32_t BMP_HDR_SZ = 14;
+    uint32_t size = sizeof(BMP);
+    for (size_t i=0; i<data_.size(); i++) {
+      size += data_.at(i).size();
+    }
 
     // Write BMP header
-    f->WriteU16(0x4D42);
+    BMP bmp;
+    bmp.Signature = 0x4D42; // 'BM'
+    bmp.FileSize = size;
+    bmp.Reserved = 0;
+    bmp.DataOffset = data_.at(0).size() + sizeof(BMP);
 
-    // Write placeholder for size
-    size_t sz_loc = f->pos();
-    f->WriteU32(0);
-
-    // Write "reserved" bytes
-    f->WriteU32(0);
-
-    // Write data offset
-    f->WriteU32(data_.at(0).size() + BMP_HDR_SZ);
+    f->WriteData(&bmp, sizeof(bmp));
 
     for (size_t i=0; i<data_.size(); i++) {
       f->WriteBytes(data_.at(i));
     }
-
-    size_t len = f->pos();
-    f->seek(sz_loc);
-    f->WriteU32(len);
     break;
   }
   case MxOb::FLC:

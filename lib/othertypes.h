@@ -72,6 +72,16 @@ public:
   uint32_t Dummy;
 };
 
+// Analogous to BITMAPFILEHEADER, copied from http://www.ece.ualberta.ca/~elliott/ee552/studentAppNotes/2003_w/misc/bmp_file_format/bmp_file_format.htm
+LIBWEAVER_PACK(class BMP
+{
+public:
+  uint16_t Signature;   // Should always be BM
+  uint32_t FileSize;    // Size of total file including header and 'BM'
+  uint32_t Reserved;    // Unused (always 0)
+  uint32_t DataOffset;  // Offset of actual data after BITMAPINFOHEADER
+});
+
 }
 
 #endif // OTHERTYPES_H
