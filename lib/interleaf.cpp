@@ -314,6 +314,14 @@ Interleaf::Error Interleaf::Read(FileBase *f)
   return ReadChunk(this, f, &m_Info);
 }
 
+void RecursivelyAddObjectToList(std::vector<Object*> *list, Object *o)
+{
+  list->push_back(o);
+  for (size_t j=0; j<o->GetChildCount(); j++) {
+    RecursivelyAddObjectToList(list, static_cast<Object*>(o->GetChildAt(j)));
+  }
+}
+
 Interleaf::Error Interleaf::Write(FileBase *f) const
 {
   if (m_BufferSize == 0) {
@@ -363,6 +371,9 @@ Interleaf::Error Interleaf::Write(FileBase *f) const
 
     for (size_t i = 0; i < GetChildCount(); i++) {
       Object *child = static_cast<Object*>(GetChildAt(i));
+      if (child->type() == MxOb::Null) {
+        continue;
+      }
 
       uint32_t mxst_offset = f->pos();
 
@@ -387,10 +398,7 @@ Interleaf::Error Interleaf::Write(FileBase *f) const
         // First, interleave headers
         std::vector<Object*> objects;
         objects.reserve(child->GetChildCount() + 1);
-        objects.push_back(child);
-        for (size_t j=0; j<child->GetChildCount(); j++) {
-          objects.push_back(static_cast<Object*>(child->GetChildAt(j)));
-        }
+        RecursivelyAddObjectToList(&objects, child);
 
         InterleaveObjects(f, objects);
 
@@ -477,8 +485,9 @@ struct ChunkStatus
 bool HasChildrenThatNeedPriority(Object *parent, uint32_t parent_time, const std::vector<ChunkStatus> &other_jobs)
 {
   for (size_t i=0; i<other_jobs.size(); i++) {
-    if (parent->ContainsChild(other_jobs.at(i).object)
-        && other_jobs.at(i).time <= parent_time) {
+    Object *other_obj = other_jobs.at(i).object;
+
+    if (parent->ContainsChild(other_obj) && other_jobs.at(i).time <= parent_time) {
       return true;
     }
   }
@@ -576,11 +585,18 @@ void Interleaf::InterleaveObjects(FileBase *f, const std::vector<Object *> &obje
     }
 
     // Update parent time too
-    for (size_t i=0; i<status.size(); i++) {
-      ChunkStatus &p = status.at(i);
-      if (p.object != obj) {
-        if (p.object->ContainsChild(obj)) {
-          p.time = std::max(p.time, s->time);
+    bool done = false;
+    while (!done) {
+      done = true;
+      for (size_t i=0; i<status.size(); i++) {
+        ChunkStatus &p = status.at(i);
+        if (p.object != obj) {
+          if (p.object->ContainsChild(obj)) {
+            if (p.time < s->time) {
+              p.time = s->time;
+              done = false;
+            }
+          }
         }
       }
     }
