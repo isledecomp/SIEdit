@@ -517,6 +517,28 @@ void Interleaf::InterleaveObjects(FileBase *f, const std::vector<Object *> &obje
 
   // Next, interleave the rest based on time
   while (true) {
+    // Update parent time too
+    bool done = false;
+    while (!done) {
+      done = true;
+      for (size_t j=0; j<status.size(); j++) {
+        ChunkStatus &s = status.at(j);
+        Object *obj = s.object;
+
+        for (size_t i=0; i<status.size(); i++) {
+          ChunkStatus &p = status.at(i);
+          if (p.object != obj) {
+            if (p.object->ContainsChild(obj)) {
+              if (p.time < s.time) {
+                p.time = s.time;
+                done = false;
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Find next chunk
     std::vector<ChunkStatus>::iterator s = status.begin();
     if (s == status.end()) {
@@ -582,23 +604,6 @@ void Interleaf::InterleaveObjects(FileBase *f, const std::vector<Object *> &obje
     case MxOb::OBJ:
       // Unaffected by time
       break;
-    }
-
-    // Update parent time too
-    bool done = false;
-    while (!done) {
-      done = true;
-      for (size_t i=0; i<status.size(); i++) {
-        ChunkStatus &p = status.at(i);
-        if (p.object != obj) {
-          if (p.object->ContainsChild(obj)) {
-            if (p.time < s->time) {
-              p.time = s->time;
-              done = false;
-            }
-          }
-        }
-      }
     }
   }
 }
