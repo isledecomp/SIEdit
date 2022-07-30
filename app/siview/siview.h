@@ -14,6 +14,8 @@ class SIViewDialog : public QWidget
 public:
   SIViewDialog(si::Info *info, QWidget *parent = nullptr);
 
+  void SetSubtitle(const QString &s);
+
   std::unique_ptr<si::Interleaf> temp;
 
 private:

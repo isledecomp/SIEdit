@@ -13,8 +13,6 @@ SIViewDialog::SIViewDialog(Info *riff, QWidget *parent) :
   root_(riff),
   last_set_data_(nullptr)
 {
-  setWindowTitle(tr("View SI File"));
-
   auto layout = new QVBoxLayout(this);
 
   auto splitter = new QSplitter();
@@ -35,6 +33,19 @@ SIViewDialog::SIViewDialog(Info *riff, QWidget *parent) :
   config_stack_->addWidget(panel_);
 
   splitter->setSizes({99999, 99999});
+
+  SetSubtitle(QString());
+}
+
+void SIViewDialog::SetSubtitle(const QString &s)
+{
+  QString t;
+  if (s.isEmpty()) {
+    t = tr("View SI File");
+  } else {
+    t = tr("View SI File: %1").arg(s);
+  }
+  setWindowTitle(t);
 }
 
 void SIViewDialog::SelectionChanged(const QModelIndex &index)

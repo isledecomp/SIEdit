@@ -326,6 +326,7 @@ void MainWindow::ViewSIFile()
     std::unique_ptr<Interleaf> temp = std::make_unique<Interleaf>();
     if (OpenInterleafFileInternal(this, temp.get(), s)) {
       SIViewDialog *v = new SIViewDialog(temp->GetInformation(), this);
+      v->SetSubtitle(QFileInfo(s).fileName());
       v->temp = std::move(temp);
       v->setAttribute(Qt::WA_DeleteOnClose);
       v->show();
