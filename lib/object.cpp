@@ -141,6 +141,11 @@ bool Object::ReplaceWithFile(FileBase *f)
 
     return true;
   }
+  case MxOb::OBJ:
+  {
+    data_.push_back(f->ReadBytes(f->size()));
+    return true;
+  }
   default:
     LogWarning() << "Don't yet know how to chunk type " << RIFF::PrintU32AsString(this->filetype()) << std::endl;
     break;
