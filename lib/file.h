@@ -87,18 +87,18 @@ private:
 class MemoryBuffer : public FileBase
 {
 public:
-  MemoryBuffer();
-  MemoryBuffer(const bytearray &data);
+  LIBWEAVER_EXPORT MemoryBuffer();
+  LIBWEAVER_EXPORT MemoryBuffer(const bytearray &data);
 
-  virtual size_t pos();
-  virtual size_t size();
-  virtual void seek(size_t p, SeekMode s = SeekStart);
-  virtual bool atEnd();
+  LIBWEAVER_EXPORT virtual size_t pos();
+  LIBWEAVER_EXPORT virtual size_t size();
+  LIBWEAVER_EXPORT virtual void seek(size_t p, SeekMode s = SeekStart);
+  LIBWEAVER_EXPORT virtual bool atEnd();
 
   const bytearray &data() const { return m_Internal; }
 
-  virtual size_t ReadData(void *data, size_t size);
-  virtual size_t WriteData(const void *data, size_t size);
+  LIBWEAVER_EXPORT virtual size_t ReadData(void *data, size_t size);
+  LIBWEAVER_EXPORT virtual size_t WriteData(const void *data, size_t size);
 
 private:
   bytearray m_Internal;
