@@ -2,6 +2,7 @@
 #define FILE_H
 
 #ifdef _WIN32
+#include <algorithm>
 #include <Windows.h>
 #else
 #include <fstream>
