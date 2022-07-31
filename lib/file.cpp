@@ -12,6 +12,7 @@ bool File::Open(const char *c, Mode mode)
                          mode == Read ? OPEN_EXISTING : CREATE_NEW,
                          FILE_ATTRIBUTE_NORMAL,
                          NULL);
+  m_Mode = mode;
   return m_Handle != INVALID_HANDLE_VALUE;
 #else
   std::ios::openmode m = std::ios::binary;

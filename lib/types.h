@@ -1,6 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <map>
