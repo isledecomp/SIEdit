@@ -49,7 +49,7 @@ bool File::Open(const wchar_t *c, Mode mode)
 size_t File::pos()
 {
 #ifdef _WIN32
-  DWORD high = 0;
+  LONG high = 0;
   DWORD low = SetFilePointer(m_Handle, 0, &high, FILE_CURRENT);
   return (high << 32) | low;
 #else
@@ -79,7 +79,7 @@ size_t File::size()
 void File::seek(size_t p, SeekMode s)
 {
 #ifdef _WIN32
-  DWORD high = p >> 32;
+  LONG high = p >> 32;
   DWORD low = p;
 
   DWORD m;
