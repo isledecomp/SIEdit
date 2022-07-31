@@ -1,6 +1,19 @@
 #include "file.h"
 
+#ifdef _WIN32
+#define NOMINMAX
+#include <Windows.h>
+#else
+#include <fstream>
+#define FSTR(x) static_cast<std::fstream*>(x)
+#endif
+
 namespace si {
+
+File::File()
+{
+  m_Handle = NULL;
+}
 
 bool File::Open(const char *c, Mode mode)
 {
@@ -23,8 +36,9 @@ bool File::Open(const char *c, Mode mode)
     m |= std::ios::out;
   }
 
-  m_Stream.open(c, m);
-  if (m_Stream.good() && m_Stream.is_open()) {
+  m_Handle = new std::fstream();
+  FSTR(m_Handle)->open(c, m);
+  if (FSTR(m_Handle)->good() && FSTR(m_Handle)->is_open()) {
     m_Mode = mode;
     return true;
   }
@@ -47,41 +61,41 @@ bool File::Open(const wchar_t *c, Mode mode)
 }
 #endif
 
-size_t File::pos()
+File::pos_t File::pos()
 {
 #ifdef _WIN32
   LONG high = 0;
   DWORD low = SetFilePointer(m_Handle, 0, &high, FILE_CURRENT);
-  return (high << 32) | low;
+  return pos_t(high) << 32 | low;
 #else
   if (m_Mode == Read) {
-    return m_Stream.tellg();
+    return FSTR(m_Handle)->tellg();
   } else {
-    return m_Stream.tellp();
+    return FSTR(m_Handle)->tellp();
   }
 #endif
 }
 
-size_t File::size()
+File::pos_t File::size()
 {
 #ifdef _WIN32
   DWORD high;
   DWORD low = GetFileSize(m_Handle, &high);
-  return high << 32 | low;
+  return pos_t(high) << 32 | low;
 #else
-  size_t before = pos();
+  pos_t before = pos();
   seek(0, SeekEnd);
-  size_t sz = pos();
+  pos_t sz = pos();
   seek(before, SeekStart);
   return sz;
 #endif
 }
 
-void File::seek(size_t p, SeekMode s)
+void File::seek(File::pos_t p, SeekMode s)
 {
 #ifdef _WIN32
   LONG high = p >> 32;
-  DWORD low = p;
+  DWORD low = (DWORD) p;
 
   DWORD m;
   switch (s) {
@@ -113,9 +127,9 @@ void File::seek(size_t p, SeekMode s)
   }
 
   if (m_Mode == Read) {
-    m_Stream.seekg(p, d);
+    FSTR(m_Handle)->seekg(p, d);
   } else {
-    m_Stream.seekp(p, d);
+    FSTR(m_Handle)->seekp(p, d);
   }
 #endif
 }
@@ -125,32 +139,34 @@ void File::Close()
 #ifdef _WIN32
   CloseHandle(m_Handle);
 #else
-  m_Stream.close();
+  FSTR(m_Handle)->close();
+  delete FSTR(m_Handle);
+  m_Handle = NULL;
 #endif
 }
 
-size_t File::ReadData(void *data, size_t size)
+File::pos_t File::ReadData(void *data, File::pos_t size)
 {
 #ifdef _WIN32
   DWORD r;
-  ReadFile(m_Handle, data, size, &r, NULL);
+  ReadFile(m_Handle, data, (DWORD) size, &r, NULL);
   return r;
 #else
-  size_t before = this->pos();
-  m_Stream.read((char *) data, size);
+  pos_t before = this->pos();
+  FSTR(m_Handle)->read((char *) data, size);
   return this->pos() - before;
 #endif
 }
 
-size_t File::WriteData(const void *data, size_t size)
+File::pos_t File::WriteData(const void *data, File::pos_t size)
 {
 #ifdef _WIN32
   DWORD w;
-  WriteFile(m_Handle, data, size, &w, NULL);
+  WriteFile(m_Handle, data, (DWORD) size, &w, NULL);
   return w;
 #else
-  size_t before = this->pos();
-  m_Stream.write((const char *) data, size);
+  pos_t before = this->pos();
+  FSTR(m_Handle)->write((const char *) data, size);
   return this->pos() - before;
 #endif
 }
@@ -227,7 +243,7 @@ void FileBase::WriteString(const std::string &d)
   WriteU8(0);
 }
 
-bytearray FileBase::ReadBytes(size_t size)
+bytearray FileBase::ReadBytes(File::pos_t size)
 {
   bytearray d;
 
@@ -253,17 +269,17 @@ MemoryBuffer::MemoryBuffer(const bytearray &data)
   m_Position = 0;
 }
 
-size_t MemoryBuffer::pos()
+File::pos_t MemoryBuffer::pos()
 {
   return m_Position;
 }
 
-size_t MemoryBuffer::size()
+File::pos_t MemoryBuffer::size()
 {
   return m_Internal.size();
 }
 
-void MemoryBuffer::seek(size_t p, SeekMode s)
+void MemoryBuffer::seek(File::pos_t p, SeekMode s)
 {
   switch (s) {
   case SeekStart:
@@ -273,12 +289,12 @@ void MemoryBuffer::seek(size_t p, SeekMode s)
     m_Position += p;
     break;
   case SeekEnd:
-    m_Position = std::max(size_t(0), m_Internal.size() - p);
+    m_Position = std::max(pos_t(0), pos_t(m_Internal.size() - p));
     break;
   }
 }
 
-size_t MemoryBuffer::ReadData(void *data, size_t size)
+File::pos_t MemoryBuffer::ReadData(void *data, File::pos_t size)
 {
   size = std::min(size, m_Internal.size() - m_Position);
   memcpy(data, m_Internal.data() + m_Position, size);
@@ -286,9 +302,9 @@ size_t MemoryBuffer::ReadData(void *data, size_t size)
   return size;
 }
 
-size_t MemoryBuffer::WriteData(const void *data, size_t size)
+File::pos_t MemoryBuffer::WriteData(const void *data, File::pos_t size)
 {
-  size_t end = m_Position + size;
+  pos_t end = m_Position + size;
   if (end > m_Internal.size()) {
     m_Internal.resize(end);
   }

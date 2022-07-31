@@ -1,12 +1,6 @@
 #ifndef FILE_H
 #define FILE_H
 
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <fstream>
-#endif
-
 #include "types.h"
 
 namespace si {
@@ -27,13 +21,15 @@ public:
     Write
   };
 
+  typedef uint64_t pos_t;
+
   uint8_t ReadU8();
   uint16_t ReadU16();
   uint32_t ReadU32();
   std::string ReadString();
-  bytearray ReadBytes(size_t size);
+  bytearray ReadBytes(pos_t size);
   Vector3 ReadVector3();
-  virtual size_t ReadData(void *data, size_t size) = 0;
+  virtual pos_t ReadData(void *data, pos_t size) = 0;
 
   void WriteU8(uint8_t u);
   void WriteU16(uint16_t u);
@@ -41,7 +37,7 @@ public:
   void WriteString(const std::string &s);
   void WriteBytes(const bytearray &b);
   void WriteVector3(const Vector3 &b);
-  virtual size_t WriteData(const void *data, size_t size) = 0;
+  virtual pos_t WriteData(const void *data, pos_t size) = 0;
 
   virtual void Close() {}
 
@@ -52,9 +48,9 @@ public:
     SeekEnd
   };
 
-  virtual size_t pos() = 0;
-  virtual size_t size() = 0;
-  virtual void seek(size_t p, SeekMode s = SeekStart) = 0;
+  virtual pos_t pos() = 0;
+  virtual pos_t size() = 0;
+  virtual void seek(pos_t p, SeekMode s = SeekStart) = 0;
   LIBWEAVER_EXPORT bool atEnd() { return pos() == size(); }
 
 };
@@ -62,6 +58,8 @@ public:
 class File : public FileBase
 {
 public:
+  File();
+
   virtual ~File()
   {
     Close();
@@ -73,20 +71,16 @@ public:
   bool Open(const wchar_t *c, Mode mode);
 #endif
 
-  virtual size_t pos();
-  virtual size_t size();
-  virtual void seek(size_t p, SeekMode s = SeekStart);
+  virtual pos_t pos();
+  virtual pos_t size();
+  virtual void seek(pos_t p, SeekMode s = SeekStart);
 
   virtual void Close();
-  virtual size_t ReadData(void *data, size_t size);
-  virtual size_t WriteData(const void *data, size_t size);
+  virtual pos_t ReadData(void *data, pos_t size);
+  virtual pos_t WriteData(const void *data, pos_t size);
 
 private:
-#ifdef _WIN32
-  HANDLE m_Handle;
-#else
-  std::fstream m_Stream;
-#endif
+  void *m_Handle;
   Mode m_Mode;
 
 };
@@ -97,18 +91,18 @@ public:
   LIBWEAVER_EXPORT MemoryBuffer();
   LIBWEAVER_EXPORT MemoryBuffer(const bytearray &data);
 
-  LIBWEAVER_EXPORT virtual size_t pos();
-  LIBWEAVER_EXPORT virtual size_t size();
-  LIBWEAVER_EXPORT virtual void seek(size_t p, SeekMode s = SeekStart);
+  LIBWEAVER_EXPORT virtual pos_t pos();
+  LIBWEAVER_EXPORT virtual pos_t size();
+  LIBWEAVER_EXPORT virtual void seek(pos_t p, SeekMode s = SeekStart);
 
   const bytearray &data() const { return m_Internal; }
 
-  LIBWEAVER_EXPORT virtual size_t ReadData(void *data, size_t size);
-  LIBWEAVER_EXPORT virtual size_t WriteData(const void *data, size_t size);
+  LIBWEAVER_EXPORT virtual pos_t ReadData(void *data, pos_t size);
+  LIBWEAVER_EXPORT virtual pos_t WriteData(const void *data, pos_t size);
 
 private:
   bytearray m_Internal;
-  size_t m_Position;
+  pos_t m_Position;
 
 };
 
