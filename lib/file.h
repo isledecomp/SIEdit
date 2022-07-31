@@ -1,7 +1,11 @@
 #ifndef FILE_H
 #define FILE_H
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
 #include <fstream>
+#endif
 
 #include "types.h"
 
@@ -51,7 +55,7 @@ public:
   virtual size_t pos() = 0;
   virtual size_t size() = 0;
   virtual void seek(size_t p, SeekMode s = SeekStart) = 0;
-  virtual bool atEnd() = 0;
+  LIBWEAVER_EXPORT bool atEnd() { return pos() == size(); }
 
 };
 
@@ -72,14 +76,17 @@ public:
   virtual size_t pos();
   virtual size_t size();
   virtual void seek(size_t p, SeekMode s = SeekStart);
-  virtual bool atEnd();
 
   virtual void Close();
   virtual size_t ReadData(void *data, size_t size);
   virtual size_t WriteData(const void *data, size_t size);
 
 private:
+#ifdef _WIN32
+  HANDLE m_Handle;
+#else
   std::fstream m_Stream;
+#endif
   Mode m_Mode;
 
 };
@@ -93,7 +100,6 @@ public:
   LIBWEAVER_EXPORT virtual size_t pos();
   LIBWEAVER_EXPORT virtual size_t size();
   LIBWEAVER_EXPORT virtual void seek(size_t p, SeekMode s = SeekStart);
-  LIBWEAVER_EXPORT virtual bool atEnd();
 
   const bytearray &data() const { return m_Internal; }
 

@@ -1,11 +1,19 @@
 #include "file.h"
 
-#include "util.h"
-
 namespace si {
 
 bool File::Open(const char *c, Mode mode)
 {
+#ifdef _WIN32
+  m_Handle = CreateFileA(c,
+                         mode == Read ? GENERIC_READ : GENERIC_WRITE,
+                         FILE_SHARE_READ,
+                         NULL,
+                         mode == Read ? OPEN_EXISTING : CREATE_NEW,
+                         FILE_ATTRIBUTE_NORMAL,
+                         NULL);
+  return m_Handle != INVALID_HANDLE_VALUE;
+#else
   std::ios::openmode m = std::ios::binary;
 
   if (mode == Read) {
@@ -21,49 +29,74 @@ bool File::Open(const char *c, Mode mode)
   }
 
   return false;
+#endif
 }
 
 #ifdef _WIN32
 bool File::Open(const wchar_t *c, Mode mode)
 {
-  std::ios::open_mode m = std::ios::binary;
-
-  if (mode == Read) {
-    m |= std::ios::in;
-  } else {
-    m |= std::ios::out;
-  }
-
-  m_Stream.open(c, m);
-  if (m_Stream.good() && m_Stream.is_open()) {
-    m_Mode = mode;
-    return true;
-  }
-
-  return false;
+  m_Handle = CreateFileW(c,
+                         mode == Read ? GENERIC_READ : GENERIC_WRITE,
+                         FILE_SHARE_READ,
+                         NULL,
+                         mode == Read ? OPEN_EXISTING : CREATE_NEW,
+                         FILE_ATTRIBUTE_NORMAL,
+                         NULL);
+  return m_Handle != INVALID_HANDLE_VALUE;
 }
 #endif
 
 size_t File::pos()
 {
+#ifdef _WIN32
+  DWORD high = 0;
+  DWORD low = SetFilePointer(m_Handle, 0, &high, FILE_CURRENT);
+  return (high << 32) | low;
+#else
   if (m_Mode == Read) {
     return m_Stream.tellg();
   } else {
     return m_Stream.tellp();
   }
+#endif
 }
 
 size_t File::size()
 {
+#ifdef _WIN32
+  DWORD high;
+  DWORD low = GetFileSize(m_Handle, &high);
+  return high << 32 | low;
+#else
   size_t before = pos();
   seek(0, SeekEnd);
   size_t sz = pos();
   seek(before, SeekStart);
   return sz;
+#endif
 }
 
 void File::seek(size_t p, SeekMode s)
 {
+#ifdef _WIN32
+  DWORD high = p >> 32;
+  DWORD low = p;
+
+  DWORD m;
+  switch (s) {
+  case SeekStart:
+    m = FILE_BEGIN;
+    break;
+  case SeekCurrent:
+    m = FILE_CURRENT;
+    break;
+  case SeekEnd:
+    m = FILE_END;
+    break;
+  }
+
+  SetFilePointer(m_Handle, low, &high, m);
+#else
   std::ios::seekdir d;
 
   switch (s) {
@@ -83,30 +116,42 @@ void File::seek(size_t p, SeekMode s)
   } else {
     m_Stream.seekp(p, d);
   }
-}
-
-bool File::atEnd()
-{
-  return !m_Stream.good();
+#endif
 }
 
 void File::Close()
 {
+#ifdef _WIN32
+  CloseHandle(m_Handle);
+#else
   m_Stream.close();
+#endif
 }
 
 size_t File::ReadData(void *data, size_t size)
 {
+#ifdef _WIN32
+  DWORD r;
+  ReadFile(m_Handle, data, size, &r, NULL);
+  return r;
+#else
   size_t before = this->pos();
   m_Stream.read((char *) data, size);
   return this->pos() - before;
+#endif
 }
 
 size_t File::WriteData(const void *data, size_t size)
 {
+#ifdef _WIN32
+  DWORD w;
+  WriteFile(m_Handle, data, size, &w, NULL);
+  return w;
+#else
   size_t before = this->pos();
   m_Stream.write((const char *) data, size);
   return this->pos() - before;
+#endif
 }
 
 uint8_t FileBase::ReadU8()
@@ -230,11 +275,6 @@ void MemoryBuffer::seek(size_t p, SeekMode s)
     m_Position = std::max(size_t(0), m_Internal.size() - p);
     break;
   }
-}
-
-bool MemoryBuffer::atEnd()
-{
-  return m_Position == m_Internal.size();
 }
 
 size_t MemoryBuffer::ReadData(void *data, size_t size)
