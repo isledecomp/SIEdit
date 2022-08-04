@@ -217,7 +217,12 @@ bool Object::ExtractToFile(FileBase *f) const
     // Subsequent chunks are FLIC frames with an additional 20 byte header that needs to be stripped
     const int CUSTOM_HEADER_SZ = 20;
     for (size_t i=1; i<data_.size(); i++) {
-      f->WriteData(data_.at(i).data() + CUSTOM_HEADER_SZ, data_.at(i).size() - CUSTOM_HEADER_SZ);
+      if (data_.at(i).size() == CUSTOM_HEADER_SZ) {
+        static const char *empty_hdr = "\x10\x00\x00\x00\xfa\xf1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+        f->WriteData(empty_hdr, 16);
+      } else {
+        f->WriteData(data_.at(i).data() + CUSTOM_HEADER_SZ, data_.at(i).size() - CUSTOM_HEADER_SZ);
+      }
     }
     break;
   }

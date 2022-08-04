@@ -52,6 +52,18 @@ public:
   uint8_t reserved3[40];  // Set to zerodesc << "
 };
 
+class FLICFrame
+{
+public:
+  uint32_t size;          // Size of the chunk, including subchunks
+  uint16_t type;          // Chunk type: 0xF1FA
+  uint16_t chunks;        // Number of subchunks
+  uint16_t delay;         // Delay in milliseconds
+  int16_t reserved;       // Always zero
+  uint16_t width;         // Frame width override (if non-zero)
+  uint16_t height;        // Frame height override (if non-zero)
+};
+
 // Copied from https://wiki.multimedia.cx/index.php/Smacker#Header
 class SMK2
 {
