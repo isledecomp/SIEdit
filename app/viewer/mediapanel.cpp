@@ -19,7 +19,8 @@ MediaPanel::MediaPanel(QWidget *parent) :
   m_SwrCtx(nullptr),
   m_IoCtx(nullptr),
   m_AudioOutput(nullptr),
-  m_SliderPressed(false)
+  m_SliderPressed(false),
+  m_vflip(false)
 {
   int row = 0;
 
@@ -27,6 +28,15 @@ MediaPanel::MediaPanel(QWidget *parent) :
   layout()->addWidget(wav_group, row, 0, 1, 2);
 
   auto preview_layout = new QVBoxLayout(wav_group);
+
+  m_vflipCheckbox = new QCheckBox(tr("Flip Vertically"));
+  connect(m_vflipCheckbox, &QCheckBox::toggled, this, [this](bool e){
+    m_vflip = e;
+    SliderMoved(m_PlayheadSlider->value());
+  });
+  m_vflipCheckbox->setVisible(false);
+  //vflip_checkbox->setAlignment(Qt::AlignCenter);
+  preview_layout->addWidget(m_vflipCheckbox);
 
   m_ImgViewer = new QLabel();
   m_ImgViewer->setAlignment(Qt::AlignCenter);
@@ -220,6 +230,7 @@ void MediaPanel::OnOpeningData(void *data)
   }
 
   if (m_VideoCodecCtx) {
+    m_vflipCheckbox->setVisible(true);
     VideoUpdate(0);
   }
 }
@@ -282,6 +293,9 @@ void MediaPanel::Close()
   m_PlayheadSlider->setValue(0);
 
   m_ImgViewer->setPixmap(QPixmap());
+
+  m_vflipCheckbox->setChecked(false);
+  m_vflipCheckbox->setVisible(false);
 }
 
 void MediaPanel::VideoUpdate(float t)
@@ -350,6 +364,11 @@ void MediaPanel::VideoUpdate(float t)
                 m_SwsFrame->data, m_SwsFrame->linesize);
 
       QImage img(m_SwsFrame->data[0], m_SwsFrame->width, m_SwsFrame->height, m_SwsFrame->linesize[0], QImage::Format_RGBA8888);
+
+      if (m_vflip) {
+        img = img.mirrored(false, true);
+      }
+
       m_ImgViewer->setPixmap(QPixmap::fromImage(img));
     }
   }

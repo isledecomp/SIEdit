@@ -10,6 +10,7 @@ extern "C" {
 
 #include <file.h>
 #include <QAudioOutput>
+#include <QCheckBox>
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
@@ -70,12 +71,14 @@ private:
   QByteArray m_AudioBuffer;
   AVSampleFormat m_AudioOutputSampleFmt;
   QSlider *m_PlayheadSlider;
+  QCheckBox *m_vflipCheckbox;
   QPushButton *m_PlayBtn;
   QTimer *m_PlaybackTimer;
   qint64 m_PlaybackStart;
   float m_PlaybackOffset;
   bool m_AudioFlushed;
   bool m_SliderPressed;
+  bool m_vflip;
 
 private slots:
   void Play(bool e);
