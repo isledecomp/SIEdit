@@ -71,7 +71,6 @@ private:
   QByteArray m_AudioBuffer;
   AVSampleFormat m_AudioOutputSampleFmt;
   QSlider *m_PlayheadSlider;
-  QCheckBox *m_vflipCheckbox;
   QPushButton *m_PlayBtn;
   QTimer *m_PlaybackTimer;
   qint64 m_PlaybackStart;
@@ -85,11 +84,15 @@ private slots:
 
   void TimerUpdate();
 
+  void UpdateVideo();
+
   void SliderPressed();
   void SliderMoved(int i);
   void SliderReleased();
 
   void AudioStateChanged(QAudio::State state);
+
+  void LabelContextMenuTriggered(const QPoint &pos);
 
 };
 

@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QGroupBox>
+#include <QMenu>
 #include <QMouseEvent>
 
 MediaPanel::MediaPanel(QWidget *parent) :
@@ -29,17 +30,10 @@ MediaPanel::MediaPanel(QWidget *parent) :
 
   auto preview_layout = new QVBoxLayout(wav_group);
 
-  m_vflipCheckbox = new QCheckBox(tr("Flip Vertically"));
-  connect(m_vflipCheckbox, &QCheckBox::toggled, this, [this](bool e){
-    m_vflip = e;
-    SliderMoved(m_PlayheadSlider->value());
-  });
-  m_vflipCheckbox->setVisible(false);
-  //vflip_checkbox->setAlignment(Qt::AlignCenter);
-  preview_layout->addWidget(m_vflipCheckbox);
-
   m_ImgViewer = new QLabel();
   m_ImgViewer->setAlignment(Qt::AlignCenter);
+  m_ImgViewer->setContextMenuPolicy(Qt::CustomContextMenu);
+  connect(m_ImgViewer, &QWidget::customContextMenuRequested, this, &MediaPanel::LabelContextMenuTriggered);
   preview_layout->addWidget(m_ImgViewer);
 
   auto wav_layout = new QHBoxLayout();
@@ -230,7 +224,9 @@ void MediaPanel::OnOpeningData(void *data)
   }
 
   if (m_VideoCodecCtx) {
-    m_vflipCheckbox->setVisible(true);
+    // Heuristic to flip phoneme flics vertically
+    m_vflip = (o->name().find("_Pho_") != std::string::npos);
+
     VideoUpdate(0);
   }
 }
@@ -294,8 +290,7 @@ void MediaPanel::Close()
 
   m_ImgViewer->setPixmap(QPixmap());
 
-  m_vflipCheckbox->setChecked(false);
-  m_vflipCheckbox->setVisible(false);
+  m_vflip = false;
 }
 
 void MediaPanel::VideoUpdate(float t)
@@ -536,6 +531,11 @@ void MediaPanel::TimerUpdate()
   }
 }
 
+void MediaPanel::UpdateVideo()
+{
+  SliderMoved(m_PlayheadSlider->value());
+}
+
 void MediaPanel::SliderPressed()
 {
   m_SliderPressed = true;
@@ -565,6 +565,21 @@ void MediaPanel::AudioStateChanged(QAudio::State state)
     Play(false);
     m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
   }
+}
+
+void MediaPanel::LabelContextMenuTriggered(const QPoint &pos)
+{
+  QMenu m(this);
+
+  auto vert_flip = m.addAction(tr("Flip Vertically"));
+  vert_flip->setCheckable(true);
+  vert_flip->setChecked(m_vflip);
+  connect(vert_flip, &QAction::triggered, this, [this](bool e){
+    m_vflip = e;
+    UpdateVideo();
+  });
+
+  m.exec(static_cast<QWidget*>(sender())->mapToGlobal(pos));
 }
 
 MediaAudioDevice::MediaAudioDevice(MediaPanel *o) :
