@@ -136,8 +136,9 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
       if (list_count == LIST::Act_ || list_count == LIST::RAND) {
         desc << "Extension: ";
         if (list_count == LIST::RAND) {
-          uint32_t rand_lower = f->ReadU32();
-          uint64_t rand_val = uint64_t(list_count) << 32 | rand_lower;
+          uint32_t rand_upper = f->ReadU32();
+          uint64_t rand_val = uint64_t(rand_upper) << 32 | list_count;
+          f->seek(1, File::SeekCurrent);
           desc << ((const char *) &rand_val);
         } else if (list_count == LIST::Act_) {
           desc << ((const char *) &list_count);
@@ -211,7 +212,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     if (!(flags & MxCh::FLAG_END)) {
       std::map<uint32_t, Object*>::iterator it = m_ObjectIDTable.find(object);
       if (it == m_ObjectIDTable.end()) {
-        LogError() << "Failed to find object " << object << " for chunk at " << std::hex << offset << std::endl;
+        LogError() << "Failed to find object " << object << " for chunk at " << std::hex << offset << std::dec << std::endl;
         //return ERROR_INVALID_INPUT;
       } else {
         Object *o = it->second;

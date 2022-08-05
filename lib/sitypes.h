@@ -65,7 +65,7 @@ class LIST : public RIFF
 public:
   enum Variation {
     Act_ = 0x00746341,
-    RAND = 0x4f444e41
+    RAND = 0x444e4152
   };
 };
 
