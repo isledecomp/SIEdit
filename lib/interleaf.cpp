@@ -133,6 +133,25 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     uint32_t list_count = 0;
     if (list_type == RIFF::MxCh) {
       list_count = f->ReadU32();
+      if (list_count == LIST::Act_ || list_count == LIST::RAND) {
+        desc << "Extension: ";
+        if (list_count == LIST::RAND) {
+          uint32_t rand_lower = f->ReadU32();
+          uint64_t rand_val = uint64_t(list_count) << 32 | rand_lower;
+          desc << ((const char *) &rand_val);
+        } else if (list_count == LIST::Act_) {
+          desc << ((const char *) &list_count);
+        }
+        desc << std::endl;
+
+        // Re-read list count
+        list_count = f->ReadU32();
+        for (uint32_t i=0; i<list_count; i++) {
+          // Read every short
+          uint16_t val = f->ReadU16();
+          desc << "  " << ((const char *) &val) << std::endl;
+        }
+      }
       desc << "Count: " << list_count << std::endl;
     }
     break;
@@ -190,29 +209,32 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     info->SetData(data);
 
     if (!(flags & MxCh::FLAG_END)) {
-      Object *o = m_ObjectIDTable.at(object);
-      if (!o) {
-        return ERROR_INVALID_INPUT;
-      }
-
-      if (flags & MxCh::FLAG_SPLIT && m_JoiningSize > 0) {
-        o->data_.back().append(data);
-
-        m_JoiningProgress += data.size();
-        if (m_JoiningProgress == m_JoiningSize) {
-          m_JoiningProgress = 0;
-          m_JoiningSize = 0;
-        }
+      std::map<uint32_t, Object*>::iterator it = m_ObjectIDTable.find(object);
+      if (it == m_ObjectIDTable.end()) {
+        LogError() << "Failed to find object " << object << " for chunk at " << std::hex << offset << std::endl;
+        //return ERROR_INVALID_INPUT;
       } else {
-        o->data_.push_back(data);
+        Object *o = it->second;
 
-        if (o->data_.size() == 2) {
-          o->time_offset_ = time;
-        }
+        if (flags & MxCh::FLAG_SPLIT && m_JoiningSize > 0) {
+          o->data_.back().append(data);
 
-        if (flags & MxCh::FLAG_SPLIT) {
-          m_JoiningProgress = data.size();
-          m_JoiningSize = data_sz;
+          m_JoiningProgress += data.size();
+          if (m_JoiningProgress == m_JoiningSize) {
+            m_JoiningProgress = 0;
+            m_JoiningSize = 0;
+          }
+        } else {
+          o->data_.push_back(data);
+
+          if (o->data_.size() == 2) {
+            o->time_offset_ = time;
+          }
+
+          if (flags & MxCh::FLAG_SPLIT) {
+            m_JoiningProgress = data.size();
+            m_JoiningSize = data_sz;
+          }
         }
       }
       break;
@@ -265,7 +287,7 @@ Object *Interleaf::ReadObject(FileBase *f, Object *o, std::stringstream &desc)
   o->id_ = f->ReadU32();
   desc << "ID: " << o->id_ << std::endl;
   o->flags_ = f->ReadU32();
-  desc << "Flags: " << o->flags_ << std::endl;
+  desc << "Flags: 0x" << std::hex << o->flags_ << std::endl;
   o->unknown4_ = f->ReadU32();
   desc << "Unknown4: " << o->unknown4_ << std::endl;
   o->duration_ = f->ReadU32();
@@ -283,7 +305,7 @@ Object *Interleaf::ReadObject(FileBase *f, Object *o, std::stringstream &desc)
   desc << "Extra Size: " << extra_sz << std::endl;
   o->extra_ = f->ReadBytes(extra_sz);
 
-  if (o->type_ != MxOb::Presenter && o->type_ != MxOb::World) {
+  if (o->type_ != MxOb::Presenter && o->type_ != MxOb::World && o->type_ != MxOb::Animation) {
     o->filename_ = f->ReadString();
     desc << "Filename: " << o->filename_ << std::endl;
     o->unknown26_ = f->ReadU32();
@@ -444,7 +466,7 @@ void Interleaf::WriteObject(FileBase *f, const Object *o) const
   f->WriteU16(o->extra_.size());
   f->WriteBytes(o->extra_);
 
-  if (o->type_ != MxOb::Presenter && o->type_ != MxOb::World) {
+  if (o->type_ != MxOb::Presenter && o->type_ != MxOb::World && o->type_ != MxOb::Animation) {
     f->WriteString(o->filename_);
     f->WriteU32(o->unknown26_);
     f->WriteU32(o->unknown27_);
