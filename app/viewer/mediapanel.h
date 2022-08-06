@@ -18,6 +18,76 @@ extern "C" {
 
 #include "panel.h"
 
+class MediaInstance : public QObject
+{
+  Q_OBJECT
+public:
+  MediaInstance(QObject *parent = nullptr);
+
+  void Open(const si::MemoryBuffer &buf);
+
+  void Close();
+
+  AVMediaType codec_type() const
+  {
+    return m_Stream ? m_Stream->codecpar->codec_type : AVMEDIA_TYPE_UNKNOWN;
+  }
+
+  bool StartPlayingAudio(const QAudioDeviceInfo &output_dev, const QAudioFormat &fmt);
+
+  void Seek(float t);
+
+  int GetNextFrame(AVFrame *frame);
+
+  qint64 ReadAudio(char *data, qint64 maxlen);
+
+  QImage GetVideoFrame(float f);
+
+  int64_t GetStreamPosition() const
+  {
+    return m_Frame->pts;
+  }
+
+  float GetTime() const
+  {
+    return float(m_Frame->pts) / m_Stream->duration;
+  }
+
+  float PercentToSeconds(float t) const;
+  float SecondsToPercent(float t) const;
+
+  int64_t PercentToTimestamp(float t) const;
+
+signals:
+  void EndOfFile();
+
+private:
+  void ClearQueue();
+
+  AVFormatContext *m_FmtCtx;
+  AVStream *m_Stream;
+  std::list<AVFrame*> m_FrameQueue;
+
+  AVPacket *m_Packet;
+  AVFrame *m_Frame;
+
+  AVCodecContext *m_CodecCtx;
+
+  SwsContext *m_SwsCtx;
+  SwrContext *m_SwrCtx;
+
+  bool m_AudioFlushed;
+  QByteArray m_AudioBuffer;
+
+  AVIOContext *m_IoCtx;
+
+  si::MemoryBuffer m_Data;
+
+  QAudioFormat m_playbackFormat;
+  AVSampleFormat m_AudioOutputSampleFmt;
+
+};
+
 class MediaPanel : public Panel
 {
   Q_OBJECT
@@ -25,7 +95,10 @@ public:
   MediaPanel(QWidget *parent = nullptr);
   virtual ~MediaPanel() override;
 
-  qint64 ReadAudio(char *data, qint64 maxlen);
+  bool IsPlaying() const
+  {
+    return m_PlaybackTimer->isActive();
+  }
 
 protected:
   virtual void OnOpeningData(void *data) override;
@@ -34,48 +107,24 @@ protected:
 private:
   void Close();
 
-  void VideoUpdate(float t);
-  void AudioSeek(float t);
-
-  int GetNextFrame(AVCodecContext *cctx, unsigned int stream, AVFrame *frame);
-
-  void ClearQueue();
-
   void StartAudioPlayback();
 
-  static float SliderValueToFloatSeconds(int i, int max, AVStream *s);
+  void VideoUpdate(float t);
 
-  AVFormatContext *m_FmtCtx;
-  AVPacket *m_Packet;
-  std::list<AVFrame*> m_FrameQueue;
-
-  AVCodecContext *m_VideoCodecCtx;
-  AVStream *m_VideoStream;
-  AVFrame *m_SwsFrame;
-  AVFrame *m_AudioFrame;
-
-  AVCodecContext *m_AudioCodecCtx;
-  AVStream *m_AudioStream;
-
-  SwsContext *m_SwsCtx;
-  SwrContext *m_SwrCtx;
-
-  AVIOContext *m_IoCtx;
-
-  si::MemoryBuffer m_Data;
+  float GetRealSliderValue() const;
+  int GetFakeSliderValueFromReal(float t) const;
 
   QLabel *m_ImgViewer;
 
+  MediaInstance *m_mediaInstance;
+
   QAudioOutput *m_AudioOutput;
   QIODevice *m_AudioNotifyDevice;
-  QByteArray m_AudioBuffer;
-  AVSampleFormat m_AudioOutputSampleFmt;
   QSlider *m_PlayheadSlider;
   QPushButton *m_PlayBtn;
   QTimer *m_PlaybackTimer;
   qint64 m_PlaybackStart;
   float m_PlaybackOffset;
-  bool m_AudioFlushed;
   bool m_SliderPressed;
   bool m_vflip;
 
@@ -94,20 +143,22 @@ private slots:
 
   void LabelContextMenuTriggered(const QPoint &pos);
 
+  void EndOfFile();
+
 };
 
 class MediaAudioDevice : public QIODevice
 {
   Q_OBJECT
 public:
-  MediaAudioDevice(MediaPanel *o = nullptr);
+  MediaAudioDevice(MediaInstance *o, QObject *parent = nullptr);
 
 protected:
   virtual qint64 readData(char *data, qint64 maxSize) override;
   virtual qint64 writeData(const char *data, qint64 maxSize) override;
 
 private:
-  MediaPanel *m_MediaPanel;
+  MediaInstance *m_mediaInstance;
 
 };
 
