@@ -356,7 +356,7 @@ void MediaPanel::OpenMediaInstance(si::Object *o)
 
     m->Open(o->ExtractToMemory());
     m->SetStartOffset(float(o->time_offset_) * 0.001f);
-    m->SetVolume(float(o->volume_) / 79.0f);
+    m->SetVolume(float(o->volume_) / si::MxOb::MAXIMUM_VOLUME);
     m->SetVirtualTime(0);
 
     m_mediaInstances.push_back(m);

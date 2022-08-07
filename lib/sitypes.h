@@ -247,6 +247,9 @@ public:
   //        probably be moved
   LIBWEAVER_EXPORT static const char *GetTypeName(Type type);
   LIBWEAVER_EXPORT static std::vector<const char*> GetFlagsName(Flags flags);
+
+  static const int MAXIMUM_VOLUME = 79;
+
 };
 
 }
