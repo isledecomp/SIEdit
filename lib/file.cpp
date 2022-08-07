@@ -283,20 +283,25 @@ void MemoryBuffer::seek(File::pos_t p, SeekMode s)
 {
   switch (s) {
   case SeekStart:
-    m_Position = p;
+    m_Position = std::min(p, size());
     break;
   case SeekCurrent:
-    m_Position += p;
+    m_Position = std::min(m_Position + p, size());
     break;
   case SeekEnd:
-    m_Position = std::max(pos_t(0), pos_t(m_Internal.size() - p));
+    if (p > size()) {
+      m_Position = 0;
+    } else {
+      m_Position = size() - p;
+    }
     break;
   }
 }
 
 File::pos_t MemoryBuffer::ReadData(void *data, File::pos_t size)
 {
-  size = std::min(size, m_Internal.size() - m_Position);
+  pos_t remaining = m_Internal.size() - m_Position;
+  size = std::min(size, remaining);
   memcpy(data, m_Internal.data() + m_Position, size);
   m_Position += size;
   return size;
