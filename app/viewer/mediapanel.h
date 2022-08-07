@@ -19,7 +19,7 @@ extern "C" {
 
 #include "panel.h"
 
-class MediaInstance : public QObject
+class MediaInstance : public QIODevice
 {
   Q_OBJECT
 public:
@@ -36,7 +36,7 @@ public:
 
   bool StartPlayingAudio(const QAudioDeviceInfo &output_dev, const QAudioFormat &fmt);
 
-  void Seek(float t);
+  void Seek(float seconds);
 
   int GetNextFrame(AVFrame *frame);
 
@@ -49,10 +49,15 @@ public:
     return float(m_Frame->pts) / m_duration;
   }
 
-  float PercentToSeconds(float t) const;
-  float SecondsToPercent(float t) const;
+  float GetDuration() const
+  {
+    return TimestampToSeconds(m_duration);
+  }
 
-  int64_t PercentToTimestamp(float t) const;
+  int64_t SecondsToTimestamp(float t) const;
+  float TimestampToSeconds(int64_t t) const;
+  int64_t SecondsToBytes(float t) const;
+  float BytesToSeconds(int64_t t);
 
   bool IsEndOfFile()
   {
@@ -64,8 +69,17 @@ public:
     m_eof = false;
   }
 
+  float GetStartOffset() const { return m_startOffset; }
+  void SetStartOffset(const float &m) { m_startOffset = m; }
+
+  void SetVirtualTime(float f);
+
 signals:
   void EndOfFile();
+
+protected:
+  virtual qint64 readData(char *data, qint64 maxSize) override;
+  virtual qint64 writeData(const char *data, qint64 maxSize) override;
 
 private:
   void ClearQueue();
@@ -92,9 +106,13 @@ private:
   QAudioFormat m_playbackFormat;
   AVSampleFormat m_AudioOutputSampleFmt;
 
+  float m_startOffset;
+
   bool m_eof;
 
   int64_t m_duration;
+
+  float m_virtualPosition;
 
 };
 
@@ -126,15 +144,17 @@ private:
 
   void VideoUpdate(float t);
 
-  float GetRealSliderValue() const;
-  int GetFakeSliderValueFromReal(float t) const;
+  static const int SECONDS_INTERVAL = 10;
+  float GetSecondsFromSlider() const;
+  void SetSecondsOnSlider(float s);
+  static int GetSliderValueForSeconds(float s);
 
   void OpenMediaInstance(si::Object *o);
 
   std::vector<QLabel *> m_imgViewers;
   std::vector<MediaInstance *> m_mediaInstances;
+  std::vector<QAudioOutput *> m_audioOutputs;
 
-  QAudioOutput *m_AudioOutput;
   QSlider *m_PlayheadSlider;
   QPushButton *m_PlayBtn;
   QTimer *m_PlaybackTimer;
@@ -157,22 +177,6 @@ private slots:
   void AudioStateChanged(QAudio::State state);
 
   void LabelContextMenuTriggered(const QPoint &pos);
-
-};
-
-class MediaAudioDevice : public QIODevice
-{
-  Q_OBJECT
-public:
-  MediaAudioDevice(MediaPanel *panel, QAudioFormat::SampleType type, QObject *parent);
-
-protected:
-  virtual qint64 readData(char *data, qint64 maxSize) override;
-  virtual qint64 writeData(const char *data, qint64 maxSize) override;
-
-private:
-  MediaPanel *m_mediaPanel;
-  QAudioFormat::SampleType m_sampleType;
 
 };
 

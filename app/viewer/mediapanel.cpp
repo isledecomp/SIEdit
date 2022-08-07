@@ -10,7 +10,6 @@
 
 MediaPanel::MediaPanel(QWidget *parent) :
   Panel(parent),
-  m_AudioOutput(nullptr),
   m_SliderPressed(false)
 {
   int row = 0;
@@ -36,7 +35,6 @@ MediaPanel::MediaPanel(QWidget *parent) :
 
   m_PlayheadSlider = new ClickableSlider(Qt::Horizontal);
   m_PlayheadSlider->setMinimum(0);
-  m_PlayheadSlider->setMaximum(100000);
   connect(m_PlayheadSlider, &QSlider::sliderPressed, this, &MediaPanel::SliderPressed);
   connect(m_PlayheadSlider, &QSlider::sliderMoved, this, &MediaPanel::SliderMoved);
   connect(m_PlayheadSlider, &QSlider::sliderReleased, this, &MediaPanel::SliderReleased);
@@ -63,6 +61,21 @@ qint64 MediaInstance::ReadAudio(char *data, qint64 maxlen)
 {
   if (m_AudioFlushed) {
     return 0;
+  }
+
+  qint64 dest_start = 0;
+
+  if (m_virtualPosition < 0) {
+    int64_t silent_bytes = SecondsToBytes(-m_virtualPosition);
+    if (silent_bytes >= maxlen) {
+      memset(data, 0, maxlen);
+      m_virtualPosition += BytesToSeconds(maxlen);
+      return maxlen;
+    } else {
+      memset(data, 0, silent_bytes);
+      dest_start += silent_bytes;
+      m_virtualPosition = 0;
+    }
   }
 
   while (!m_AudioFlushed && m_AudioBuffer.size() < maxlen) {
@@ -100,10 +113,13 @@ qint64 MediaInstance::ReadAudio(char *data, qint64 maxlen)
   }
 
   if (!m_AudioBuffer.isEmpty()) {
-    qint64 copy_len = std::min(maxlen, qint64(m_AudioBuffer.size()));
-    memcpy(data, m_AudioBuffer.data(), copy_len);
+    qint64 copy_len = std::min(maxlen - dest_start, qint64(m_AudioBuffer.size()));
+    memcpy(data + dest_start, m_AudioBuffer.data(), copy_len);
     m_AudioBuffer = m_AudioBuffer.mid(copy_len);
-    return copy_len;
+
+    qint64 total = copy_len + dest_start;
+    m_virtualPosition += BytesToSeconds(total);
+    return total;
   }
 
   return 0;
@@ -139,6 +155,13 @@ int64_t SeekData(void *opaque, int64_t offset, int whence)
 void MediaPanel::OnOpeningData(void *data)
 {
   OpenMediaInstance(static_cast<si::Object*>(data));
+
+  float total_duration = 0.0f;
+  for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
+    auto m = *it;
+    total_duration = std::max(total_duration, m->GetDuration() + m->GetStartOffset());
+  }
+  m_PlayheadSlider->setMaximum(GetSliderValueForSeconds(total_duration));
 }
 
 void MediaPanel::OnClosingData(void *data)
@@ -162,7 +185,12 @@ void MediaPanel::Close()
 QImage MediaInstance::GetVideoFrame(float t)
 {
   // Convert percent to duration seconds
-  int64_t ts = PercentToTimestamp(t);
+  t -= m_startOffset;
+  if (t < 0) {
+    t = 0;
+  }
+
+  int64_t ts = SecondsToTimestamp(t);
   //int64_t second = std::ceil(flipped);
 
   AVFrame *using_frame = nullptr;
@@ -262,16 +290,18 @@ void MediaPanel::StartAudioPlayback()
   for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
     auto m = *it;
     if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
-      if (!m->StartPlayingAudio(output_dev, fmt)) {
-        return;
+      if (m->StartPlayingAudio(output_dev, fmt)) {
+        auto out = new QAudioOutput(output_dev, fmt, this);
+        out->start(m);
+        connect(out, &QAudioOutput::stateChanged, this, [this]{
+          auto out = static_cast<QAudioOutput*>(sender());
+          m_audioOutputs.erase(std::find(m_audioOutputs.begin(), m_audioOutputs.end(), out));
+          delete out;
+        });
+        m_audioOutputs.push_back(out);
       }
     }
   }
-
-  m_AudioOutput = new QAudioOutput(output_dev, fmt, this);
-  auto device = new MediaAudioDevice(this, m_AudioOutput);
-  device->open(QIODevice::ReadOnly);
-  m_AudioOutput->start(device);
 }
 
 void MediaPanel::VideoUpdate(float t)
@@ -294,14 +324,19 @@ void MediaPanel::VideoUpdate(float t)
   }
 }
 
-float MediaPanel::GetRealSliderValue() const
+float MediaPanel::GetSecondsFromSlider() const
 {
-  return float(m_PlayheadSlider->value()) / m_PlayheadSlider->maximum();
+  return float(m_PlayheadSlider->value()) / SECONDS_INTERVAL;
 }
 
-int MediaPanel::GetFakeSliderValueFromReal(float t) const
+void MediaPanel::SetSecondsOnSlider(float s)
 {
-  return t * m_PlayheadSlider->maximum();
+  m_PlayheadSlider->setValue(GetSliderValueForSeconds(s));
+}
+
+int MediaPanel::GetSliderValueForSeconds(float s)
+{
+  return s * SECONDS_INTERVAL;
 }
 
 void MediaPanel::OpenMediaInstance(si::Object *o)
@@ -319,6 +354,8 @@ void MediaPanel::OpenMediaInstance(si::Object *o)
     auto m = new MediaInstance(this);
 
     m->Open(o->ExtractToMemory());
+    m->SetStartOffset(float(o->time_offset_) * 0.001f);
+    m->SetVirtualTime(0);
 
     m_mediaInstances.push_back(m);
 
@@ -353,17 +390,14 @@ void MediaPanel::OpenMediaInstance(si::Object *o)
 
 void MediaPanel::Play(bool e)
 {
-  if (m_AudioOutput) {
-    m_AudioOutput->stop();
-    delete m_AudioOutput;
-    m_AudioOutput = nullptr;
-  }
+  qDeleteAll(m_audioOutputs);
+  m_audioOutputs.clear();
 
   if (e) {
     bool has_video = false;
     bool has_audio = false;
 
-    m_PlaybackOffset = GetRealSliderValue();
+    m_PlaybackOffset = GetSecondsFromSlider();
 
     for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
       auto m = *it;
@@ -394,7 +428,11 @@ void MediaPanel::TimerUpdate()
   bool all_eof = true;
 
   // Don't set slider if slider pressed
-  bool set_slider = m_SliderPressed;
+  float now = float(QDateTime::currentMSecsSinceEpoch() - m_PlaybackStart) * 0.001f;
+  now += m_PlaybackOffset;
+  if (!m_SliderPressed) {
+    SetSecondsOnSlider(now);
+  }
 
   for (size_t i=0; i<m_mediaInstances.size(); i++) {
     auto m = m_mediaInstances.at(i);
@@ -404,30 +442,15 @@ void MediaPanel::TimerUpdate()
     }
 
     if (m->codec_type() == AVMEDIA_TYPE_VIDEO) {
-      float now_seconds = float(QDateTime::currentMSecsSinceEpoch() - m_PlaybackStart) * 0.001f;
-      float now = m->SecondsToPercent(now_seconds);
-      now += m_PlaybackOffset;
-
       VideoUpdate(now);
-
-      if (!set_slider) {
-        m_PlayheadSlider->setValue(GetFakeSliderValueFromReal(now));
-        set_slider = true;
-      }
     } else if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
-      if (!set_slider) {
-        m_PlayheadSlider->setValue(GetFakeSliderValueFromReal(m->GetTime()));
-        set_slider = true;
-      }
+      // Do nothing yet
     }
   }
 
   if (all_eof) {
     // Detach audio output so that it flushes itself
-    if (m_AudioOutput) {
-      connect(m_AudioOutput, &QAudioOutput::stateChanged, m_AudioOutput, &QAudioOutput::deleteLater);
-      m_AudioOutput = nullptr;
-    }
+    m_audioOutputs.clear();
 
     Play(false);
     if (!m_SliderPressed) {
@@ -448,15 +471,16 @@ void MediaPanel::SliderPressed()
 
 void MediaPanel::SliderMoved(int i)
 {
+  float f = GetSecondsFromSlider();
+  m_PlaybackOffset = f;
+  m_PlaybackStart = QDateTime::currentMSecsSinceEpoch();
+
   for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
     auto m = *it;
     if (m->codec_type() == AVMEDIA_TYPE_VIDEO) {
-      float f = GetRealSliderValue();
-      m_PlaybackOffset = f;
-      m_PlaybackStart = QDateTime::currentMSecsSinceEpoch();
       VideoUpdate(f);
     } else if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
-      m->Seek(GetRealSliderValue());
+      m->Seek(f);
     }
   }
 }
@@ -491,29 +515,12 @@ void MediaPanel::LabelContextMenuTriggered(const QPoint &pos)
   m.exec(static_cast<QWidget*>(sender())->mapToGlobal(pos));
 }
 
-MediaAudioDevice::MediaAudioDevice(MediaPanel *panel, QAudioFormat::SampleType type, QObject *parent) :
-  QIODevice(parent)
+qint64 MediaInstance::readData(char *data, qint64 maxSize)
 {
-  m_mediaPanel = panel;
-  m_sampleType = type;
+  return ReadAudio(data, maxSize);
 }
 
-qint64 MediaAudioDevice::readData(char *data, qint64 maxSize)
-{
-  qint64 len = 0;
-  for (auto it=m_mediaPanel->GetMediaInstances().cbegin(); it!=m_mediaPanel->GetMediaInstances().cend(); it++) {
-    auto m = *it;
-    if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
-      qint64 l = m->ReadAudio(data, maxSize);
-
-      len = std::max(l, len);
-      break;
-    }
-  }
-  return len;
-}
-
-qint64 MediaAudioDevice::writeData(const char *data, qint64 maxSize)
+qint64 MediaInstance::writeData(const char *data, qint64 maxSize)
 {
   return -1;
 }
@@ -545,8 +552,10 @@ MediaInstance::MediaInstance(QObject *parent) :
   m_Frame(nullptr),
   m_SwsCtx(nullptr),
   m_SwrCtx(nullptr),
-  m_IoCtx(nullptr)
+  m_IoCtx(nullptr),
+  m_startOffset(0.0f)
 {
+  this->open(QIODevice::ReadOnly);
 }
 
 void MediaInstance::Open(const si::bytearray &buf)
@@ -742,9 +751,10 @@ bool MediaInstance::StartPlayingAudio(const QAudioDeviceInfo &output_dev, const 
   return false;
 }
 
-void MediaInstance::Seek(float t)
+void MediaInstance::Seek(float seconds)
 {
-  av_seek_frame(m_FmtCtx, m_Stream->index, PercentToTimestamp(t), AVSEEK_FLAG_BACKWARD);
+  SetVirtualTime(seconds);
+  av_seek_frame(m_FmtCtx, m_Stream->index, SecondsToTimestamp(std::max(0.0f, m_virtualPosition)), AVSEEK_FLAG_BACKWARD);
 }
 
 void MediaInstance::ClearQueue()
@@ -755,17 +765,27 @@ void MediaInstance::ClearQueue()
   }
 }
 
-float MediaInstance::PercentToSeconds(float t) const
+int64_t MediaInstance::SecondsToTimestamp(float t) const
 {
-  return t * (float(m_Stream->time_base.num) * float(m_duration) / float(m_Stream->time_base.den));
+  return t / (float(m_Stream->time_base.num) / float(m_Stream->time_base.den));
 }
 
-float MediaInstance::SecondsToPercent(float t) const
+float MediaInstance::TimestampToSeconds(int64_t t) const
 {
-  return t / (float(m_Stream->time_base.num) * float(m_duration) / float(m_Stream->time_base.den));
+  return t * (float(m_Stream->time_base.num) / float(m_Stream->time_base.den));
 }
 
-int64_t MediaInstance::PercentToTimestamp(float t) const
+int64_t MediaInstance::SecondsToBytes(float t) const
 {
-  return std::floor(t * float(m_duration));
+  return std::floor(t * m_playbackFormat.sampleRate()) * m_playbackFormat.bytesPerFrame();
+}
+
+float MediaInstance::BytesToSeconds(int64_t t)
+{
+  return float(t / m_playbackFormat.bytesPerFrame()) / m_playbackFormat.sampleRate();
+}
+
+void MediaInstance::SetVirtualTime(float f)
+{
+  m_virtualPosition = f - m_startOffset;
 }
