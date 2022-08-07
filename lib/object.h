@@ -60,7 +60,7 @@ public:
   MxOb::FileType filetype_;
   uint32_t unknown29_;
   uint32_t unknown30_;
-  uint32_t unknown31_;
+  uint32_t volume_;
 
   uint32_t time_offset_;
 

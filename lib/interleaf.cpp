@@ -288,7 +288,7 @@ Object *Interleaf::ReadObject(FileBase *f, Object *o, std::stringstream &desc)
   o->id_ = f->ReadU32();
   desc << "ID: " << o->id_ << std::endl;
   o->flags_ = f->ReadU32();
-  desc << "Flags: 0x" << std::hex << o->flags_ << std::endl;
+  desc << "Flags: 0x" << std::hex << o->flags_ << std::dec << std::endl;
   o->unknown4_ = f->ReadU32();
   desc << "Unknown4: " << o->unknown4_ << std::endl;
   o->duration_ = f->ReadU32();
@@ -323,8 +323,8 @@ Object *Interleaf::ReadObject(FileBase *f, Object *o, std::stringstream &desc)
     desc << "Unknown30: " << o->unknown30_ << std::endl;
 
     if (o->filetype_ == MxOb::WAV) {
-      o->unknown31_ = f->ReadU32();
-      desc << "Unknown31: " << o->unknown31_ << std::endl;
+      o->volume_ = f->ReadU32();
+      desc << "Unknown31: " << o->volume_ << std::endl;
     }
   }
 
@@ -477,7 +477,7 @@ void Interleaf::WriteObject(FileBase *f, const Object *o) const
     f->WriteU32(o->unknown30_);
 
     if (o->filetype_ == MxOb::WAV) {
-      f->WriteU32(o->unknown31_);
+      f->WriteU32(o->volume_);
     }
   }
 

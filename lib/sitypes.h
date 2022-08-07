@@ -165,7 +165,7 @@ public:
  * FileType    | 4        | u32              | 4-byte ASCII ID for the file type
  * Unknown29   | 4        | u32              |
  * Unknown30   | 4        | u32              |
- * Unknown31   | 4        | u32              | (Optional) only populated for WAV files
+ * Volume      | 4        | u32              | Only populated for WAV files. Audio volume from 0 - 79.
  */
 class MxOb : public RIFF
 {
