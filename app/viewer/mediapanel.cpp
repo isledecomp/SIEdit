@@ -507,7 +507,11 @@ void MediaPanel::AudioOutputEnded()
 {
   auto out = static_cast<QAudioOutput*>(sender());
 
-  m_audioOutputs.erase(std::find(m_audioOutputs.begin(), m_audioOutputs.end(), out));
+  auto it = std::find(m_audioOutputs.begin(), m_audioOutputs.end(), out);
+  if (it != m_audioOutputs.end()) {
+    m_audioOutputs.erase(it);
+  }
+
   delete out;
 }
 
