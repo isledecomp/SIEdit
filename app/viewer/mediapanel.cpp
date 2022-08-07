@@ -1,17 +1,17 @@
 #include "mediapanel.h"
 
-#include <object.h>
+#include <othertypes.h>
 #include <QDateTime>
 #include <QDebug>
 #include <QGroupBox>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QScrollArea>
 
 MediaPanel::MediaPanel(QWidget *parent) :
   Panel(parent),
   m_AudioOutput(nullptr),
-  m_SliderPressed(false),
-  m_vflip(false)
+  m_SliderPressed(false)
 {
   int row = 0;
 
@@ -20,14 +20,19 @@ MediaPanel::MediaPanel(QWidget *parent) :
 
   auto preview_layout = new QVBoxLayout(wav_group);
 
-  m_ImgViewer = new QLabel();
-  m_ImgViewer->setAlignment(Qt::AlignCenter);
-  m_ImgViewer->setContextMenuPolicy(Qt::CustomContextMenu);
-  connect(m_ImgViewer, &QWidget::customContextMenuRequested, this, &MediaPanel::LabelContextMenuTriggered);
-  preview_layout->addWidget(m_ImgViewer);
+  auto viewer_scroll = new QScrollArea();
+  viewer_scroll->setWidgetResizable(true);
 
-  auto wav_layout = new QHBoxLayout();
-  preview_layout->addLayout(wav_layout);
+  auto viewer_inner = new QWidget();
+  viewer_scroll->setWidget(viewer_inner);
+
+  preview_layout->addWidget(viewer_scroll, 1);
+
+  m_viewerLayout = new QVBoxLayout(viewer_inner);
+  m_viewerLayout->setMargin(0);
+
+  auto ctrl_layout = new QHBoxLayout();
+  preview_layout->addLayout(ctrl_layout);
 
   m_PlayheadSlider = new ClickableSlider(Qt::Horizontal);
   m_PlayheadSlider->setMinimum(0);
@@ -35,23 +40,18 @@ MediaPanel::MediaPanel(QWidget *parent) :
   connect(m_PlayheadSlider, &QSlider::sliderPressed, this, &MediaPanel::SliderPressed);
   connect(m_PlayheadSlider, &QSlider::sliderMoved, this, &MediaPanel::SliderMoved);
   connect(m_PlayheadSlider, &QSlider::sliderReleased, this, &MediaPanel::SliderReleased);
-  wav_layout->addWidget(m_PlayheadSlider);
+  ctrl_layout->addWidget(m_PlayheadSlider);
 
   m_PlayBtn = new QPushButton(tr("Play"));
   m_PlayBtn->setCheckable(true);
   connect(m_PlayBtn, &QPushButton::clicked, this, &MediaPanel::Play);
-  wav_layout->addWidget(m_PlayBtn);
+  ctrl_layout->addWidget(m_PlayBtn);
 
-  FinishLayout();
+  //FinishLayout();
 
   m_PlaybackTimer = new QTimer(this);
   m_PlaybackTimer->setInterval(10);
   connect(m_PlaybackTimer, &QTimer::timeout, this, &MediaPanel::TimerUpdate);
-
-  m_mediaInstance = new MediaInstance(this);
-  connect(m_mediaInstance, &MediaInstance::EndOfFile, this, &MediaPanel::EndOfFile);
-
-  m_AudioNotifyDevice = new MediaAudioDevice(m_mediaInstance, this);
 }
 
 MediaPanel::~MediaPanel()
@@ -138,16 +138,7 @@ int64_t SeekData(void *opaque, int64_t offset, int whence)
 
 void MediaPanel::OnOpeningData(void *data)
 {
-  si::Object *o = static_cast<si::Object*>(data);
-
-  m_mediaInstance->Open(o->ExtractToMemory());
-
-  if (m_mediaInstance->codec_type() == AVMEDIA_TYPE_VIDEO) {
-    // Heuristic to flip phoneme flics vertically
-    m_vflip = (o->name().find("_Pho_") != std::string::npos);
-
-    VideoUpdate(0);
-  }
+  OpenMediaInstance(static_cast<si::Object*>(data));
 }
 
 void MediaPanel::OnClosingData(void *data)
@@ -159,13 +150,13 @@ void MediaPanel::Close()
 {
   Play(false);
 
-  m_mediaInstance->Close();
+  qDeleteAll(m_mediaInstances);
+  m_mediaInstances.clear();
 
   m_PlayheadSlider->setValue(0);
 
-  m_ImgViewer->setPixmap(QPixmap());
-
-  m_vflip = false;
+  qDeleteAll(m_imgViewers);
+  m_imgViewers.clear();
 }
 
 QImage MediaInstance::GetVideoFrame(float t)
@@ -200,10 +191,6 @@ QImage MediaInstance::GetVideoFrame(float t)
       int ret = GetNextFrame(f);
       if (ret < 0) {
         av_frame_free(&f);
-
-        if (ret == AVERROR_EOF) {
-          emit EndOfFile();
-        }
         break;
       } else {
         AVFrame *previous = nullptr;
@@ -241,21 +228,27 @@ QImage MediaInstance::GetVideoFrame(float t)
 
 int MediaInstance::GetNextFrame(AVFrame *frame)
 {
+  m_eof = false;
   int ret;
   av_frame_unref(frame);
   while ((ret = avcodec_receive_frame(m_CodecCtx, frame)) == AVERROR(EAGAIN)) {
     av_packet_unref(m_Packet);
     ret = av_read_frame(m_FmtCtx, m_Packet);
     if (ret < 0) {
-      return ret;
+      break;
     }
 
     if (m_Packet->stream_index == m_Stream->index) {
       ret = avcodec_send_packet(m_CodecCtx, m_Packet);
       if (ret < 0) {
-        return ret;
+        break;
       }
     }
+  }
+
+  if (ret == AVERROR_EOF) {
+    m_eof = true;
+    emit EndOfFile();
   }
 
   return ret;
@@ -266,23 +259,38 @@ void MediaPanel::StartAudioPlayback()
   auto output_dev = QAudioDeviceInfo::defaultOutputDevice();
   auto fmt = output_dev.preferredFormat();
 
-  if (m_mediaInstance->StartPlayingAudio(output_dev, fmt)) {
-    m_AudioOutput = new QAudioOutput(output_dev, fmt, this);
-    m_AudioNotifyDevice->open(QIODevice::ReadOnly);
-    connect(m_AudioOutput, &QAudioOutput::stateChanged, this, &MediaPanel::AudioStateChanged);
-    m_AudioOutput->start(m_AudioNotifyDevice);
+  for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
+    auto m = *it;
+    if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
+      if (!m->StartPlayingAudio(output_dev, fmt)) {
+        return;
+      }
+    }
   }
+
+  m_AudioOutput = new QAudioOutput(output_dev, fmt, this);
+  auto device = new MediaAudioDevice(this, m_AudioOutput);
+  device->open(QIODevice::ReadOnly);
+  m_AudioOutput->start(device);
 }
 
 void MediaPanel::VideoUpdate(float t)
 {
-  QImage img = m_mediaInstance->GetVideoFrame(t);
-  if (!img.isNull()) {
-    if (m_vflip) {
-      img = img.mirrored(false, true);
-    }
+  for (size_t i=0; i<m_mediaInstances.size(); i++) {
+    auto m = m_mediaInstances.at(i);
 
-    m_ImgViewer->setPixmap(QPixmap::fromImage(img));
+    if (m->codec_type() == AVMEDIA_TYPE_VIDEO) {
+      QImage img = m->GetVideoFrame(t);
+      if (!img.isNull()) {
+        auto v = m_imgViewers.at(i);
+
+        if (v->property("vflip").toBool()) {
+          img = img.mirrored(false, true);
+        }
+
+        v->setPixmap(QPixmap::fromImage(img));
+      }
+    }
   }
 }
 
@@ -296,24 +304,81 @@ int MediaPanel::GetFakeSliderValueFromReal(float t) const
   return t * m_PlayheadSlider->maximum();
 }
 
+void MediaPanel::OpenMediaInstance(si::Object *o)
+{
+  switch (o->type()) {
+  case si::MxOb::Presenter:
+    for (auto it=o->GetChildren().cbegin(); it!=o->GetChildren().cend(); it++) {
+      OpenMediaInstance(static_cast<si::Object*>(*it));
+    }
+    break;
+  case si::MxOb::Video:
+  case si::MxOb::Sound:
+  case si::MxOb::Bitmap:
+  {
+    auto m = new MediaInstance(this);
+
+    m->Open(o->ExtractToMemory());
+
+    m_mediaInstances.push_back(m);
+
+    if (m->codec_type() == AVMEDIA_TYPE_VIDEO) {
+      // Heuristic to flip phoneme flics vertically
+      if (m_imgViewers.size() < m_mediaInstances.size()) {
+        m_imgViewers.resize(m_mediaInstances.size());
+      }
+
+      auto v = new QLabel();
+      v->setAlignment(Qt::AlignCenter);
+      v->setContextMenuPolicy(Qt::CustomContextMenu);
+      v->setProperty("vflip", (o->name().find("_Pho_") != std::string::npos));
+      connect(v, &QWidget::customContextMenuRequested, this, &MediaPanel::LabelContextMenuTriggered);
+      m_viewerLayout->addWidget(v);
+      m_imgViewers[m_mediaInstances.size()-1] = v;
+
+      VideoUpdate(0);
+    }
+    break;
+  }
+  case si::MxOb::Null:
+  case si::MxOb::World:
+  case si::MxOb::Event:
+  case si::MxOb::Animation:
+  case si::MxOb::Object:
+  case si::MxOb::TYPE_COUNT:
+    // Do nothing
+    break;
+  }
+}
+
 void MediaPanel::Play(bool e)
 {
   if (m_AudioOutput) {
     m_AudioOutput->stop();
     delete m_AudioOutput;
     m_AudioOutput = nullptr;
-
-    m_AudioNotifyDevice->close();
   }
 
   if (e) {
-    if (m_mediaInstance->codec_type() == AVMEDIA_TYPE_VIDEO) {
-      m_PlaybackOffset = GetRealSliderValue();
-    } else {
-      m_PlaybackOffset = 0;
-      if (m_mediaInstance->codec_type() == AVMEDIA_TYPE_AUDIO) {
-        StartAudioPlayback();
+    bool has_video = false;
+    bool has_audio = false;
+
+    m_PlaybackOffset = GetRealSliderValue();
+
+    for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
+      auto m = *it;
+
+      m->ResetEOF();
+
+      if (m->codec_type() == AVMEDIA_TYPE_VIDEO) {
+        has_video = true;
+      } else if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
+        has_audio = true;
       }
+    }
+
+    if (has_audio) {
+      StartAudioPlayback();
     }
 
     m_PlaybackStart = QDateTime::currentMSecsSinceEpoch();
@@ -326,15 +391,48 @@ void MediaPanel::Play(bool e)
 
 void MediaPanel::TimerUpdate()
 {
-  if (!m_SliderPressed && m_mediaInstance->GetStreamPosition() != AV_NOPTS_VALUE) {
-    m_PlayheadSlider->setValue(GetFakeSliderValueFromReal(m_mediaInstance->GetTime()));
+  bool all_eof = true;
+
+  // Don't set slider if slider pressed
+  bool set_slider = m_SliderPressed;
+
+  for (size_t i=0; i<m_mediaInstances.size(); i++) {
+    auto m = m_mediaInstances.at(i);
+
+    if (all_eof && !m->IsEndOfFile()) {
+      all_eof = false;
+    }
+
+    if (m->codec_type() == AVMEDIA_TYPE_VIDEO) {
+      float now_seconds = float(QDateTime::currentMSecsSinceEpoch() - m_PlaybackStart) * 0.001f;
+      float now = m->SecondsToPercent(now_seconds);
+      now += m_PlaybackOffset;
+
+      VideoUpdate(now);
+
+      if (!set_slider) {
+        m_PlayheadSlider->setValue(GetFakeSliderValueFromReal(now));
+        set_slider = true;
+      }
+    } else if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
+      if (!set_slider) {
+        m_PlayheadSlider->setValue(GetFakeSliderValueFromReal(m->GetTime()));
+        set_slider = true;
+      }
+    }
   }
 
-  if (m_mediaInstance->codec_type() == AVMEDIA_TYPE_VIDEO) {
-    float now_seconds = float(QDateTime::currentMSecsSinceEpoch() - m_PlaybackStart) * 0.001f;
-    float now = m_mediaInstance->SecondsToPercent(now_seconds);
+  if (all_eof) {
+    // Detach audio output so that it flushes itself
+    if (m_AudioOutput) {
+      connect(m_AudioOutput, &QAudioOutput::stateChanged, m_AudioOutput, &QAudioOutput::deleteLater);
+      m_AudioOutput = nullptr;
+    }
 
-    VideoUpdate(now + m_PlaybackOffset);
+    Play(false);
+    if (!m_SliderPressed) {
+      m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
+    }
   }
 }
 
@@ -350,13 +448,16 @@ void MediaPanel::SliderPressed()
 
 void MediaPanel::SliderMoved(int i)
 {
-  if (m_mediaInstance->codec_type() == AVMEDIA_TYPE_VIDEO) {
-    float f = GetRealSliderValue();
-    m_PlaybackOffset = f;
-    m_PlaybackStart = QDateTime::currentMSecsSinceEpoch();
-    VideoUpdate(f);
-  } else if (m_mediaInstance->codec_type() == AVMEDIA_TYPE_AUDIO) {
-    m_mediaInstance->Seek(GetRealSliderValue());
+  for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
+    auto m = *it;
+    if (m->codec_type() == AVMEDIA_TYPE_VIDEO) {
+      float f = GetRealSliderValue();
+      m_PlaybackOffset = f;
+      m_PlaybackStart = QDateTime::currentMSecsSinceEpoch();
+      VideoUpdate(f);
+    } else if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
+      m->Seek(GetRealSliderValue());
+    }
   }
 }
 
@@ -377,36 +478,39 @@ void MediaPanel::LabelContextMenuTriggered(const QPoint &pos)
 {
   QMenu m(this);
 
+  QObject *s = sender();
+
   auto vert_flip = m.addAction(tr("Flip Vertically"));
   vert_flip->setCheckable(true);
-  vert_flip->setChecked(m_vflip);
-  connect(vert_flip, &QAction::triggered, this, [this](bool e){
-    m_vflip = e;
+  vert_flip->setChecked(s->property("vflip").toBool());
+  connect(vert_flip, &QAction::triggered, this, [this, s](bool e){
+    s->setProperty("vflip", e);
     UpdateVideo();
   });
 
   m.exec(static_cast<QWidget*>(sender())->mapToGlobal(pos));
 }
 
-void MediaPanel::EndOfFile()
-{
-  if (IsPlaying()) {
-    Play(false);
-    if (!m_SliderPressed) {
-      m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
-    }
-  }
-}
-
-MediaAudioDevice::MediaAudioDevice(MediaInstance *o, QObject *parent) :
+MediaAudioDevice::MediaAudioDevice(MediaPanel *panel, QAudioFormat::SampleType type, QObject *parent) :
   QIODevice(parent)
 {
-  m_mediaInstance = o;
+  m_mediaPanel = panel;
+  m_sampleType = type;
 }
 
 qint64 MediaAudioDevice::readData(char *data, qint64 maxSize)
 {
-  return m_mediaInstance->ReadAudio(data, maxSize);
+  qint64 len = 0;
+  for (auto it=m_mediaPanel->GetMediaInstances().cbegin(); it!=m_mediaPanel->GetMediaInstances().cend(); it++) {
+    auto m = *it;
+    if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
+      qint64 l = m->ReadAudio(data, maxSize);
+
+      len = std::max(l, len);
+      break;
+    }
+  }
+  return len;
 }
 
 qint64 MediaAudioDevice::writeData(const char *data, qint64 maxSize)
@@ -443,10 +547,9 @@ MediaInstance::MediaInstance(QObject *parent) :
   m_SwrCtx(nullptr),
   m_IoCtx(nullptr)
 {
-
 }
 
-void MediaInstance::Open(const si::MemoryBuffer &buf)
+void MediaInstance::Open(const si::bytearray &buf)
 {
   static const size_t buf_sz = 4096;
 
@@ -485,6 +588,13 @@ void MediaInstance::Open(const si::MemoryBuffer &buf)
   }
 
   m_Stream = m_FmtCtx->streams[0];
+
+  m_duration = m_Stream->duration;
+  if (m_Stream->codecpar->codec_id == AV_CODEC_ID_FLIC) {
+    // FFmpeg can't retrieve the FLIC duration, but we can
+    si::FLIC *flic = (si::FLIC *) buf.data();
+    m_duration = flic->frames;
+  }
 
   const AVCodec *decoder = avcodec_find_decoder(m_Stream->codecpar->codec_id);
   if (!decoder) {
@@ -562,6 +672,10 @@ void MediaInstance::Close()
 
 bool MediaInstance::StartPlayingAudio(const QAudioDeviceInfo &output_dev, const QAudioFormat &fmt)
 {
+  if (m_SwrCtx) {
+    swr_free(&m_SwrCtx);
+  }
+
   AVSampleFormat smp_fmt = AV_SAMPLE_FMT_S16;
   switch (fmt.sampleType()) {
   case QAudioFormat::Unknown:
@@ -643,15 +757,15 @@ void MediaInstance::ClearQueue()
 
 float MediaInstance::PercentToSeconds(float t) const
 {
-  return t * (float(m_Stream->time_base.num) * float(m_Stream->duration) / float(m_Stream->time_base.den));
+  return t * (float(m_Stream->time_base.num) * float(m_duration) / float(m_Stream->time_base.den));
 }
 
 float MediaInstance::SecondsToPercent(float t) const
 {
-  return t / (float(m_Stream->time_base.num) * float(m_Stream->duration) / float(m_Stream->time_base.den));
+  return t / (float(m_Stream->time_base.num) * float(m_duration) / float(m_Stream->time_base.den));
 }
 
 int64_t MediaInstance::PercentToTimestamp(float t) const
 {
-  return std::floor(t * float(m_Stream->duration));
+  return std::floor(t * float(m_duration));
 }

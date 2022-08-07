@@ -268,16 +268,7 @@ void MainWindow::SelectionChanged(const QModelIndex &index)
   Object *c = dynamic_cast<Object*>(static_cast<Core*>(index.internalPointer()));
 
   if (c) {
-    switch (c->filetype()) {
-    case MxOb::STL:
-    case MxOb::WAV:
-    case MxOb::SMK:
-    case MxOb::FLC:
-      p = panel_media_;
-      break;
-    case MxOb::OBJ:
-      break;
-    }
+    p = panel_media_;
   }
 
   if (p != config_stack_->currentWidget() || c != last_set_data_) {

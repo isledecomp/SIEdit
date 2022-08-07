@@ -9,6 +9,7 @@ extern "C" {
 }
 
 #include <file.h>
+#include <object.h>
 #include <QAudioOutput>
 #include <QCheckBox>
 #include <QLabel>
@@ -24,7 +25,7 @@ class MediaInstance : public QObject
 public:
   MediaInstance(QObject *parent = nullptr);
 
-  void Open(const si::MemoryBuffer &buf);
+  void Open(const si::bytearray &buf);
 
   void Close();
 
@@ -43,20 +44,25 @@ public:
 
   QImage GetVideoFrame(float f);
 
-  int64_t GetStreamPosition() const
-  {
-    return m_Frame->pts;
-  }
-
   float GetTime() const
   {
-    return float(m_Frame->pts) / m_Stream->duration;
+    return float(m_Frame->pts) / m_duration;
   }
 
   float PercentToSeconds(float t) const;
   float SecondsToPercent(float t) const;
 
   int64_t PercentToTimestamp(float t) const;
+
+  bool IsEndOfFile()
+  {
+    return m_eof;
+  }
+
+  void ResetEOF()
+  {
+    m_eof = false;
+  }
 
 signals:
   void EndOfFile();
@@ -86,6 +92,10 @@ private:
   QAudioFormat m_playbackFormat;
   AVSampleFormat m_AudioOutputSampleFmt;
 
+  bool m_eof;
+
+  int64_t m_duration;
+
 };
 
 class MediaPanel : public Panel
@@ -98,6 +108,11 @@ public:
   bool IsPlaying() const
   {
     return m_PlaybackTimer->isActive();
+  }
+
+  const std::vector<MediaInstance *> &GetMediaInstances() const
+  {
+    return m_mediaInstances;
   }
 
 protected:
@@ -114,19 +129,19 @@ private:
   float GetRealSliderValue() const;
   int GetFakeSliderValueFromReal(float t) const;
 
-  QLabel *m_ImgViewer;
+  void OpenMediaInstance(si::Object *o);
 
-  MediaInstance *m_mediaInstance;
+  std::vector<QLabel *> m_imgViewers;
+  std::vector<MediaInstance *> m_mediaInstances;
 
   QAudioOutput *m_AudioOutput;
-  QIODevice *m_AudioNotifyDevice;
   QSlider *m_PlayheadSlider;
   QPushButton *m_PlayBtn;
   QTimer *m_PlaybackTimer;
   qint64 m_PlaybackStart;
   float m_PlaybackOffset;
   bool m_SliderPressed;
-  bool m_vflip;
+  QVBoxLayout *m_viewerLayout;
 
 private slots:
   void Play(bool e);
@@ -143,22 +158,21 @@ private slots:
 
   void LabelContextMenuTriggered(const QPoint &pos);
 
-  void EndOfFile();
-
 };
 
 class MediaAudioDevice : public QIODevice
 {
   Q_OBJECT
 public:
-  MediaAudioDevice(MediaInstance *o, QObject *parent = nullptr);
+  MediaAudioDevice(MediaPanel *panel, QAudioFormat::SampleType type, QObject *parent);
 
 protected:
   virtual qint64 readData(char *data, qint64 maxSize) override;
   virtual qint64 writeData(const char *data, qint64 maxSize) override;
 
 private:
-  MediaInstance *m_mediaInstance;
+  MediaPanel *m_mediaPanel;
+  QAudioFormat::SampleType m_sampleType;
 
 };
 
