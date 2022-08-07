@@ -9,8 +9,7 @@
 #include <QScrollArea>
 
 MediaPanel::MediaPanel(QWidget *parent) :
-  Panel(parent),
-  m_SliderPressed(false)
+  Panel(parent)
 {
   int row = 0;
 
@@ -282,29 +281,6 @@ int MediaInstance::GetNextFrame(AVFrame *frame)
   return ret;
 }
 
-void MediaPanel::StartAudioPlayback()
-{
-  auto output_dev = QAudioDeviceInfo::defaultOutputDevice();
-  auto fmt = output_dev.preferredFormat();
-
-  for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
-    auto m = *it;
-    if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
-      if (m->StartPlayingAudio(output_dev, fmt)) {
-        auto out = new QAudioOutput(output_dev, fmt, this);
-        out->setVolume(m->GetVolume());
-        out->start(m);
-        connect(out, &QAudioOutput::stateChanged, this, [this]{
-          auto out = static_cast<QAudioOutput*>(sender());
-          m_audioOutputs.erase(std::find(m_audioOutputs.begin(), m_audioOutputs.end(), out));
-          delete out;
-        });
-        m_audioOutputs.push_back(out);
-      }
-    }
-  }
-}
-
 void MediaPanel::VideoUpdate(float t)
 {
   for (size_t i=0; i<m_mediaInstances.size(); i++) {
@@ -392,14 +368,28 @@ void MediaPanel::OpenMediaInstance(si::Object *o)
 
 void MediaPanel::Play(bool e)
 {
-  qDeleteAll(m_audioOutputs);
-  m_audioOutputs.clear();
+  {
+    // No matter what, stop any current audio
+    std::vector<QAudioOutput*> copy = m_audioOutputs;
+    for (auto it=copy.cbegin(); it!=copy.cend(); it++) {
+      auto o = *it;
+      o->stop();
+    }
+  }
 
   if (e) {
     bool has_video = false;
     bool has_audio = false;
 
+    if (m_PlayheadSlider->value() == m_PlayheadSlider->maximum()) {
+      m_PlayheadSlider->setValue(0);
+      SliderMoved(0);
+    }
+
     m_PlaybackOffset = GetSecondsFromSlider();
+
+    auto output_dev = QAudioDeviceInfo::defaultOutputDevice();
+    auto fmt = output_dev.preferredFormat();
 
     for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
       auto m = *it;
@@ -409,12 +399,19 @@ void MediaPanel::Play(bool e)
       if (m->codec_type() == AVMEDIA_TYPE_VIDEO) {
         has_video = true;
       } else if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
-        has_audio = true;
+        if (m_PlaybackOffset < (m->GetDuration() + m->GetStartOffset())) {
+          if (m->StartPlayingAudio(output_dev, fmt)) {
+            auto out = new QAudioOutput(output_dev, fmt, this);
+            out->setVolume(m->GetVolume());
+            out->start(m);
+            connect(out, &QAudioOutput::stateChanged, this, &MediaPanel::AudioOutputEnded);
+            m_audioOutputs.push_back(out);
+            has_audio = true;
+          }
+        } else {
+          m->ResetEOF(true);
+        }
       }
-    }
-
-    if (has_audio) {
-      StartAudioPlayback();
     }
 
     m_PlaybackStart = QDateTime::currentMSecsSinceEpoch();
@@ -432,9 +429,7 @@ void MediaPanel::TimerUpdate()
   // Don't set slider if slider pressed
   float now = float(QDateTime::currentMSecsSinceEpoch() - m_PlaybackStart) * 0.001f;
   now += m_PlaybackOffset;
-  if (!m_SliderPressed) {
-    SetSecondsOnSlider(now);
-  }
+  SetSecondsOnSlider(now);
 
   for (size_t i=0; i<m_mediaInstances.size(); i++) {
     auto m = m_mediaInstances.at(i);
@@ -455,9 +450,7 @@ void MediaPanel::TimerUpdate()
     m_audioOutputs.clear();
 
     Play(false);
-    if (!m_SliderPressed) {
-      m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
-    }
+    m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
   }
 }
 
@@ -468,7 +461,9 @@ void MediaPanel::UpdateVideo()
 
 void MediaPanel::SliderPressed()
 {
-  m_SliderPressed = true;
+  if (IsPlaying()) {
+    Play(false);
+  }
 }
 
 void MediaPanel::SliderMoved(int i)
@@ -489,15 +484,6 @@ void MediaPanel::SliderMoved(int i)
 
 void MediaPanel::SliderReleased()
 {
-  m_SliderPressed = false;
-}
-
-void MediaPanel::AudioStateChanged(QAudio::State state)
-{
-  if (state == QAudio::IdleState) {
-    Play(false);
-    m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
-  }
 }
 
 void MediaPanel::LabelContextMenuTriggered(const QPoint &pos)
@@ -515,6 +501,14 @@ void MediaPanel::LabelContextMenuTriggered(const QPoint &pos)
   });
 
   m.exec(static_cast<QWidget*>(sender())->mapToGlobal(pos));
+}
+
+void MediaPanel::AudioOutputEnded()
+{
+  auto out = static_cast<QAudioOutput*>(sender());
+
+  m_audioOutputs.erase(std::find(m_audioOutputs.begin(), m_audioOutputs.end(), out));
+  delete out;
 }
 
 qint64 MediaInstance::readData(char *data, qint64 maxSize)
@@ -740,10 +734,7 @@ bool MediaInstance::StartPlayingAudio(const QAudioDeviceInfo &output_dev, const 
     if (swr_init(m_SwrCtx) < 0) {
       qCritical() << "Failed to init swr ctx";
     } else {
-      if (m_AudioFlushed) {
-        Seek(0);
-        m_AudioFlushed = false;
-      }
+      m_AudioFlushed = false;
       m_AudioBuffer.clear();
 
       return true;

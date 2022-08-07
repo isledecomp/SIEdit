@@ -64,9 +64,9 @@ public:
     return m_eof;
   }
 
-  void ResetEOF()
+  void ResetEOF(bool val = false)
   {
-    m_eof = false;
+    m_eof = val;
   }
 
   float GetStartOffset() const { return m_startOffset; }
@@ -145,8 +145,6 @@ protected:
 private:
   void Close();
 
-  void StartAudioPlayback();
-
   void VideoUpdate(float t);
 
   static const int SECONDS_INTERVAL = 10;
@@ -165,7 +163,6 @@ private:
   QTimer *m_PlaybackTimer;
   qint64 m_PlaybackStart;
   float m_PlaybackOffset;
-  bool m_SliderPressed;
   QVBoxLayout *m_viewerLayout;
 
 private slots:
@@ -179,9 +176,9 @@ private slots:
   void SliderMoved(int i);
   void SliderReleased();
 
-  void AudioStateChanged(QAudio::State state);
-
   void LabelContextMenuTriggered(const QPoint &pos);
+
+  void AudioOutputEnded();
 
 };
 
