@@ -292,6 +292,7 @@ void MediaPanel::StartAudioPlayback()
     if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
       if (m->StartPlayingAudio(output_dev, fmt)) {
         auto out = new QAudioOutput(output_dev, fmt, this);
+        out->setVolume(m->GetVolume());
         out->start(m);
         connect(out, &QAudioOutput::stateChanged, this, [this]{
           auto out = static_cast<QAudioOutput*>(sender());
@@ -355,6 +356,7 @@ void MediaPanel::OpenMediaInstance(si::Object *o)
 
     m->Open(o->ExtractToMemory());
     m->SetStartOffset(float(o->time_offset_) * 0.001f);
+    m->SetVolume(float(o->volume_) / 79.0f);
     m->SetVirtualTime(0);
 
     m_mediaInstances.push_back(m);

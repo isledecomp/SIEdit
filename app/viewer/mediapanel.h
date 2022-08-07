@@ -74,6 +74,9 @@ public:
 
   void SetVirtualTime(float f);
 
+  float GetVolume() const { return m_volume; }
+  void SetVolume(float v) { m_volume = v; }
+
 signals:
   void EndOfFile();
 
@@ -113,6 +116,8 @@ private:
   int64_t m_duration;
 
   float m_virtualPosition;
+
+  float m_volume;
 
 };
 
