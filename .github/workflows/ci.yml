@@ -34,7 +34,7 @@ jobs:
       shell: bash
       run: |
         FILENAME="ffmpeg-n4.4-latest-win32-gpl-shared-4.4"
-        wget -c https://github.com/sudo-nautilus/FFmpeg-Builds-Win32/releases/download/latest/$FILENAME.zip
+        curl -fLOSs https://github.com/sudo-nautilus/FFmpeg-Builds-Win32/releases/download/latest/$FILENAME.zip
         7z x $FILENAME.zip
         $FILENAME >> $GITHUB_PATH
 
