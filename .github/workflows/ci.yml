@@ -13,9 +13,7 @@ on:
       - 'README.md'
 
 jobs:
-
   build:
-
     runs-on: windows-latest
 
     steps:
@@ -33,9 +31,9 @@ jobs:
     - name: Install FFmpeg
       shell: bash
       run: |
-        FILENAME="ffmpeg-5.0.1-full_build-shared"
-        curl -fLOSs https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.0.1-full_build-shared.7z
-        7z x $FILENAME.7z
+        FILENAME="ffmpeg-n4.4-latest-win64-gpl-4.4.zip"
+        curl -fLOSs https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/$FILENAME.zip
+        7z x $FILENAME.zip
         echo "$FILENAME" >> $GITHUB_PATH
 
     - name: Build
