@@ -50,13 +50,12 @@ jobs:
         cp lib/*.dll deploy
         cd deploy
         windeployqt si-edit.exe libweaver.dll
-        7z a libweaver.zip *
 
-    - name: Upload a Build Artifact
+    - name: Upload Build Artifact
       uses: actions/upload-artifact@v2.2.1
       with:
         path:
-          deploy/libweaver.7z
+          deploy
 
     - name: Upload to Releases
       shell: bash
@@ -66,5 +65,7 @@ jobs:
         TRAVIS_REPO_SLUG: itsmattkc/libweaver
         TRAVIS_COMMIT: ${{ github.sha }}
       run: |
+        cd deploy
+        7z a libweaver.zip *
         curl -fLOSs --retry 2 --retry-delay 60 https://github.com/probonopd/uploadtool/raw/master/upload.sh
-        ./upload.sh deploy/libweaver.7z
+        ./upload.sh libweaver.zip
