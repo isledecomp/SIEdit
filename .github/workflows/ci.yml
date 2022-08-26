@@ -31,7 +31,7 @@ jobs:
     - name: Install FFmpeg
       shell: bash
       run: |
-        FILENAME="ffmpeg-n4.4-latest-win64-gpl-4.4"
+        FILENAME="ffmpeg-n4.4-latest-win64-gpl-shared-4.4"
         curl -fLOSs https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/$FILENAME.zip
         7z x $FILENAME.zip
         echo "$FILENAME" >> $GITHUB_PATH
