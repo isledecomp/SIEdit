@@ -46,8 +46,8 @@ jobs:
       shell: bash
       run: |
         mkdir deploy
-        cp *.exe deploy
-        cp *.dll deploy
+        cp app/*.exe deploy
+        cp lib/*.dll deploy
         cd deploy
         windeployqt si-edit.exe libweaver.dll
         7z a libweaver.zip *
