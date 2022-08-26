@@ -16,6 +16,9 @@ jobs:
   build:
     runs-on: windows-latest
 
+    env:
+      FFMPEG_DIR: ffmpeg-n4.4-latest-win64-gpl-shared-4.4
+
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -31,10 +34,9 @@ jobs:
     - name: Install FFmpeg
       shell: bash
       run: |
-        FILENAME="ffmpeg-n4.4-latest-win64-gpl-shared-4.4"
-        curl -fLOSs https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/$FILENAME.zip
-        7z x $FILENAME.zip
-        echo "$FILENAME" >> $GITHUB_PATH
+        curl -fLOSs https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/$FFMPEG_DIR.zip
+        7z x $FFMPEG_DIR.zip
+        echo "$FFMPEG_DIR" >> $GITHUB_PATH
 
     - name: Build
       shell: bash
@@ -48,6 +50,7 @@ jobs:
         mkdir deploy
         cp app/*.exe deploy
         cp lib/*.dll deploy
+        cp $FFMPEG_DIR/bin/*.dll deploy
         cd deploy
         windeployqt si-edit.exe libweaver.dll
 
