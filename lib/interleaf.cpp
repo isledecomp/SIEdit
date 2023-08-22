@@ -449,6 +449,13 @@ Interleaf::Error Interleaf::Write(FileBase *f) const
 
 void Interleaf::WriteObject(FileBase *f, const Object *o) const
 {
+  size_t projected_end = f->pos() + o->CalculateMaximumDiskSize();
+  size_t this_buf = f->pos()/m_BufferSize;
+  size_t end_buf = projected_end/m_BufferSize;
+  if (this_buf != end_buf) {
+    WritePadding(f, (end_buf * m_BufferSize) - f->pos());
+  }
+
   RIFF::Chk mxob = RIFF::BeginChunk(f, RIFF::MxOb);
 
   f->WriteU16(o->type_);

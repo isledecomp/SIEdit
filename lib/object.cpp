@@ -277,6 +277,35 @@ size_t Object::GetFileBodySize() const
   return s;
 }
 
+size_t Object::CalculateMaximumDiskSize() const
+{
+  size_t s = 0;
+
+  s += 108;
+  s += presenter_.size() + 1;
+  s += name_.size() + 1;
+  s += extra_.size();
+
+  if (type_ != MxOb::Presenter && type_ != MxOb::World && type_ != MxOb::Animation) {
+    s += filename_.size() + 1;
+    s += 24;
+
+    if (filetype_ == MxOb::WAV) {
+      s += 4;
+    }
+  }
+
+  if (this->HasChildren()) {
+    s += 16;
+
+    for (size_t i = 0; i < this->GetChildCount(); i++) {
+      s += static_cast<Object*>(this->GetChildAt(i))->CalculateMaximumDiskSize();
+    }
+  }
+
+  return s;
+}
+
 Object *Object::FindSubObjectWithID(uint32_t id)
 {
   if (this->id() == id) {

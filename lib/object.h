@@ -38,6 +38,8 @@ public:
   const std::string &filename() const { return filename_; }
   const ChunkedData &data() const { return data_; }
 
+  size_t CalculateMaximumDiskSize() const;
+
   Object *FindSubObjectWithID(uint32_t id);
 
   MxOb::Type type_;
