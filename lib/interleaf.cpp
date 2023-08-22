@@ -536,12 +536,26 @@ void Interleaf::InterleaveObjects(FileBase *f, const std::vector<Object *> &obje
   }
 
   // First, interleave headers
-  for (size_t i=0; i<status.size(); i++) {
-    ChunkStatus &s = status[i];
+  for (std::vector<ChunkStatus>::iterator it = status.begin(); it != status.end(); ) {
+    ChunkStatus &s = *it;
     Object *o = s.object;
+
+    bool proceed = true;
+
     if (!o->data().empty()) {
       WriteSubChunk(f, 0, o->id(), 0xFFFFFFFF, o->data().front());
       s.index++;
+
+      // If we've already reached the end, write the end chunk now
+      if (o->data().size() == s.index) {
+        WriteSubChunk(f, MxCh::FLAG_END, o->id(), 0xFFFFFFFF);
+        it = status.erase(it);
+        proceed = false;
+      }
+    }
+
+    if (proceed) {
+      it++;
     }
   }
 
