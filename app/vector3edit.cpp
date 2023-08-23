@@ -1,6 +1,5 @@
 #include "vector3edit.h"
 
-#include <float.h>
 #include <QHBoxLayout>
 #include <QLabel>
 
@@ -12,8 +11,8 @@ Vector3Edit::Vector3Edit(QWidget *parent) :
   layout->addWidget(new QLabel(tr("X")));
 
   x_edit_ = new QDoubleSpinBox();
-  x_edit_->setMinimum(DBL_MIN);
-  x_edit_->setMaximum(DBL_MAX);
+  x_edit_->setMinimum(std::numeric_limits<double>::lowest());
+  x_edit_->setMaximum(std::numeric_limits<double>::max());
   layout->addWidget(x_edit_);
   connect(x_edit_, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &Vector3Edit::internalChanged);
 
@@ -22,8 +21,8 @@ Vector3Edit::Vector3Edit(QWidget *parent) :
   layout->addWidget(new QLabel(tr("Y")));
 
   y_edit_ = new QDoubleSpinBox();
-  y_edit_->setMinimum(DBL_MIN);
-  y_edit_->setMaximum(DBL_MAX);
+  y_edit_->setMinimum(std::numeric_limits<double>::lowest());
+  y_edit_->setMaximum(std::numeric_limits<double>::max());
   layout->addWidget(y_edit_);
   connect(y_edit_, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &Vector3Edit::internalChanged);
 
@@ -32,8 +31,8 @@ Vector3Edit::Vector3Edit(QWidget *parent) :
   layout->addWidget(new QLabel(tr("Z")));
 
   z_edit_ = new QDoubleSpinBox();
-  z_edit_->setMinimum(DBL_MIN);
-  z_edit_->setMaximum(DBL_MAX);
+  z_edit_->setMinimum(std::numeric_limits<double>::lowest());
+  z_edit_->setMaximum(std::numeric_limits<double>::max());
   layout->addWidget(z_edit_);
   connect(z_edit_, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &Vector3Edit::internalChanged);
 }
