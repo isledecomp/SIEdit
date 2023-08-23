@@ -56,6 +56,7 @@ private:
   QGroupBox *properties_group_;
 
   Vector3Edit *m_LocationEdit;
+  Vector3Edit *m_UpEdit;
 
   QSpinBox *start_time_edit_;
 
@@ -77,6 +78,7 @@ private slots:
   void ViewSIFile();
 
   void LocationChanged(const si::Vector3 &v);
+  void UpChanged(const si::Vector3 &v);
   void StartTimeChanged(int t);
 
 };

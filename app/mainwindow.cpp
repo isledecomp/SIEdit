@@ -74,6 +74,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     prow++;
 
+    properties_layout->addWidget(new QLabel(tr("Up")), prow, 0);
+
+    m_UpEdit = new Vector3Edit();
+    connect(m_UpEdit, &Vector3Edit::changed, this, &MainWindow::UpChanged);
+    properties_layout->addWidget(m_UpEdit, prow, 1);
+
+    prow++;
+
     properties_layout->addWidget(new QLabel(tr("Start Time")), prow, 0);
 
     start_time_edit_ = new QSpinBox();
@@ -142,6 +150,7 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
 
   if (chunk) {
     m_LocationEdit->SetValue(chunk->location_);
+    m_UpEdit->SetValue(chunk->up_);
     start_time_edit_->setValue(chunk->time_offset_);
   }
 }
@@ -329,6 +338,13 @@ void MainWindow::LocationChanged(const Vector3 &v)
 {
   if (last_set_data_) {
     last_set_data_->location_ = v;
+  }
+}
+
+void MainWindow::UpChanged(const si::Vector3 &v)
+{
+  if (last_set_data_) {
+    last_set_data_->up_ = v;
   }
 }
 
