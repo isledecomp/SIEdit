@@ -683,6 +683,7 @@ bool MediaInstance::StartPlayingAudio(const QAudioDeviceInfo &output_dev, const 
 {
   if (m_SwrCtx) {
     swr_free(&m_SwrCtx);
+    m_SwrCtx = nullptr;
   }
 
   AVSampleFormat smp_fmt = AV_SAMPLE_FMT_S16;
