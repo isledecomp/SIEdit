@@ -725,6 +725,21 @@ bool MediaInstance::StartPlayingAudio(const QAudioDeviceInfo &output_dev, const 
   m_playbackFormat = fmt;
   m_AudioOutputSampleFmt = smp_fmt;
 
+#if LIBSWRESAMPLE_VERSION_INT >= AV_VERSION_INT(4, 7, 0)
+  AVChannelLayout out;
+  av_channel_layout_default(&out, fmt.channelCount());
+
+  int r = swr_alloc_set_opts2(&m_SwrCtx,
+                              &out,
+                              smp_fmt,
+                              fmt.sampleRate(),
+                              &m_Stream->codecpar->ch_layout,
+                              static_cast<AVSampleFormat>(m_Stream->codecpar->format),
+                              m_Stream->codecpar->sample_rate,
+                              0, nullptr);
+  if (r < 0) {
+    qCritical() << "Failed to alloc swr ctx:" << r;
+#else
   m_SwrCtx = swr_alloc_set_opts(nullptr,
                                 av_get_default_channel_layout(fmt.channelCount()),
                                 smp_fmt,
@@ -735,6 +750,7 @@ bool MediaInstance::StartPlayingAudio(const QAudioDeviceInfo &output_dev, const 
                                 0, nullptr);
   if (!m_SwrCtx) {
     qCritical() << "Failed to alloc swr ctx";
+#endif
   } else {
     if (swr_init(m_SwrCtx) < 0) {
       qCritical() << "Failed to init swr ctx";
