@@ -11,6 +11,7 @@ Object::Object()
 {
   type_ = MxOb::Null;
   id_ = 0;
+  time_offset_ = 0;
 }
 
 #ifdef _WIN32
