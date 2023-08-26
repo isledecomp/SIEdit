@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <QFileDialog>
+#include <QLineEdit>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QSplitter>
@@ -65,6 +66,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
   {
     int prow = 0;
+
+    properties_layout->addWidget(new QLabel(tr("Extra")), prow, 0);
+
+    m_extraEdit = new QLineEdit(this);
+    connect(m_extraEdit, &QLineEdit::textChanged, this, &MainWindow::ExtraChanged);
+    properties_layout->addWidget(m_extraEdit, prow, 1);
+
+    prow++;
 
     properties_layout->addWidget(new QLabel(tr("Location")), prow, 0);
 
@@ -149,6 +158,7 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
   properties_group_->setEnabled(chunk);
 
   if (chunk) {
+    m_extraEdit->setText(QString::fromUtf8(chunk->extra_.data()));
     m_LocationEdit->SetValue(chunk->location_);
     m_UpEdit->SetValue(chunk->up_);
     start_time_edit_->setValue(chunk->time_offset_);
@@ -331,6 +341,14 @@ void MainWindow::ViewSIFile()
       v->setAttribute(Qt::WA_DeleteOnClose);
       v->show();
     }
+  }
+}
+
+void MainWindow::ExtraChanged(const QString &v)
+{
+  if (last_set_data_) {
+    last_set_data_->extra_ = bytearray(v.toUtf8(), v.size() + 1);
+    last_set_data_->extra_[v.size()] = 0;
   }
 }
 
