@@ -2,14 +2,21 @@
 
 #include <info.h>
 #include <QDebug>
+#include <QScrollArea>
 
 InfoPanel::InfoPanel(QWidget *parent) :
   Panel(parent)
 {
   int row = 0;
 
+  QScrollArea *scrollArea = new QScrollArea(this);
+//  scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
+  scrollArea->setWidgetResizable(true);
+  layout()->addWidget(scrollArea, row, 0);
+
   m_Lbl = new QLabel();
-  layout()->addWidget(m_Lbl, row, 0);
+  m_Lbl->setAlignment(Qt::AlignLeft);
+  scrollArea->setWidget(m_Lbl);
 
   row++;
 
