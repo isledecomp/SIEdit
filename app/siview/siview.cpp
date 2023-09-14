@@ -26,11 +26,15 @@ SIViewDialog::SIViewDialog(Info *riff, QWidget *parent) :
   connect(tree->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &SIViewDialog::SelectionChanged);
   splitter->addWidget(tree);
 
-  config_stack_ = new QStackedWidget();
+  /*config_stack_ = new QStackedWidget();
+  config_stack_->setContentsMargins(0,0,0,0);
   splitter->addWidget(config_stack_);
 
   panel_ = new InfoPanel();
-  config_stack_->addWidget(panel_);
+  config_stack_->addWidget(panel_);*/
+
+  panel_ = new InfoPanel();
+  splitter->addWidget(panel_);
 
   splitter->setSizes({99999, 99999});
 

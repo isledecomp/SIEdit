@@ -51,7 +51,7 @@ MainWindow::MainWindow(QWidget *parent) :
   action_layout->addStretch();
 
   config_stack_ = new QStackedWidget();
-  config_layout->addWidget(config_stack_);
+  config_layout->addWidget(config_stack_, 1);
 
   panel_blank_ = new Panel();
   config_stack_->addWidget(panel_blank_);
@@ -69,8 +69,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     properties_layout->addWidget(new QLabel(tr("Extra")), prow, 0);
 
-    m_extraEdit = new QLineEdit(this);
-    connect(m_extraEdit, &QLineEdit::textChanged, this, &MainWindow::ExtraChanged);
+    m_extraEdit = new QPlainTextEdit(this);
+    m_extraEdit->setFixedHeight(m_extraEdit->fontMetrics().height() * 3);
+    connect(m_extraEdit, &QPlainTextEdit::textChanged, this, &MainWindow::ExtraChanged);
     properties_layout->addWidget(m_extraEdit, prow, 1);
 
     prow++;
@@ -158,7 +159,7 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
   properties_group_->setEnabled(chunk);
 
   if (chunk) {
-    m_extraEdit->setText(QString::fromUtf8(chunk->extra_.data()));
+    m_extraEdit->setPlainText(QString::fromUtf8(chunk->extra_.data()));
     m_LocationEdit->SetValue(chunk->location_);
     m_UpEdit->SetValue(chunk->up_);
     start_time_edit_->setValue(chunk->time_offset_);
@@ -344,9 +345,11 @@ void MainWindow::ViewSIFile()
   }
 }
 
-void MainWindow::ExtraChanged(const QString &v)
+void MainWindow::ExtraChanged()
 {
   if (last_set_data_) {
+    auto edit = static_cast<QPlainTextEdit*>(sender());
+    QString v = edit->toPlainText();
     last_set_data_->extra_ = bytearray(v.toUtf8(), v.size() + 1);
     last_set_data_->extra_[v.size()] = 0;
   }

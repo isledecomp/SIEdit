@@ -5,6 +5,7 @@
 #include <object.h>
 #include <QGroupBox>
 #include <QMainWindow>
+#include <QPlainTextEdit>
 #include <QStackedWidget>
 #include <QTreeView>
 
@@ -55,7 +56,7 @@ private:
 
   QGroupBox *properties_group_;
 
-  QLineEdit *m_extraEdit;
+  QPlainTextEdit *m_extraEdit;
   Vector3Edit *m_LocationEdit;
   Vector3Edit *m_UpEdit;
 
@@ -78,7 +79,7 @@ private slots:
 
   void ViewSIFile();
 
-  void ExtraChanged(const QString &v);
+  void ExtraChanged();
   void LocationChanged(const si::Vector3 &v);
   void UpChanged(const si::Vector3 &v);
   void StartTimeChanged(int t);

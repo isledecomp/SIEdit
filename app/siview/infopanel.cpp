@@ -10,12 +10,11 @@ InfoPanel::InfoPanel(QWidget *parent) :
   int row = 0;
 
   QScrollArea *scrollArea = new QScrollArea(this);
-//  scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
   scrollArea->setWidgetResizable(true);
   layout()->addWidget(scrollArea, row, 0);
 
-  m_Lbl = new QLabel();
-  m_Lbl->setAlignment(Qt::AlignLeft);
+  m_Lbl = new QLabel(scrollArea);
+  m_Lbl->setAlignment(Qt::AlignTop | Qt::AlignLeft);
   scrollArea->setWidget(m_Lbl);
 
   row++;
@@ -32,7 +31,7 @@ InfoPanel::InfoPanel(QWidget *parent) :
   layout()->addWidget(m_DataView, row, 0);
   m_DataView->hide();
 
-  FinishLayout();
+  //FinishLayout();
 }
 
 void InfoPanel::OnOpeningData(void *data)

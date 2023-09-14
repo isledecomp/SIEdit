@@ -5,6 +5,7 @@ Panel::Panel(QWidget *parent) :
   data_(nullptr)
 {
   outer_layout_ = new QVBoxLayout(this);
+  outer_layout_->setContentsMargins(0, 0, 0, 0);
 
   layout_ = new QGridLayout();
   outer_layout_->addLayout(layout_);
