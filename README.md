@@ -2,7 +2,7 @@
 
 SIEdit is a fully graphical viewer and editor of the SI streaming asset pack format used by LEGO Island. It can view, extract, and replace data in all of the game's SI files, allowing textures, sounds, animations, path information, FMVs, and even some game logic/metadata to be modified. It is currently still under development, but should work with all files.
 
-*TODO: Screenshot*
+![SIEdit Screenshot](https://raw.githubusercontent.com/itsmattkc/SIEdit/master/packaging/screenshot.png)
 
 ## libweaver
 
