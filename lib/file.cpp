@@ -115,6 +115,7 @@ void File::seek(File::pos_t p, SeekMode s)
   std::ios::seekdir d;
 
   switch (s) {
+  default:
   case SeekStart:
     d = std::ios::beg;
     break;

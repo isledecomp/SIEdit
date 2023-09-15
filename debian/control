@@ -1,0 +1,14 @@
+Source: siedit
+Section: utils
+Priority: optional
+Maintainer: Joshua Peisach <itzswirlz2020@outlook.com>
+Build-Depends: cmake, debhelper-compat (= 13), dh-cmake, libavcodec-dev, libavdevice-dev, libavfilter-dev, libavformat-dev, libavutil-dev, libswresample-dev, libswscale-dev, qtbase5-dev, qtmultimedia5-dev
+Standards-Version: 4.6.0
+Homepage: https://github.com/itsmattkc/SIEdit
+Rules-Requires-Root: no
+
+Package: siedit
+Architecture: all
+Depends: ${misc:Depends}
+Description: Tools for working with SI files
+ TODO: Extended description, check build deps
