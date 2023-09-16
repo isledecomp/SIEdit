@@ -306,7 +306,11 @@ Object *Interleaf::ReadObject(FileBase *f, Object *o, std::stringstream &desc)
   desc << "Extra Size: " << extra_sz << std::endl;
   o->extra_ = f->ReadBytes(extra_sz);
 
-  desc << "Extra Data: " << o->extra_.data() << std::endl;
+  desc << "Extra Data: ";
+  if (o->extra_.size() > 0) {
+    desc << o->extra_.data() << std::endl;
+  }
+  desc << std::endl;
 
   if (o->type_ != MxOb::Presenter && o->type_ != MxOb::World && o->type_ != MxOb::Animation) {
     o->filename_ = f->ReadString();
