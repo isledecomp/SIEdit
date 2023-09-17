@@ -404,6 +404,9 @@ Interleaf::Error Interleaf::Write(FileBase *f) const
         continue;
       }
 
+      size_t maxSz = child->CalculateMaximumDiskSize() + kMinimumChunkSize;
+      WritePaddingIfNecessary(f, maxSz);
+
       uint32_t mxst_offset = f->pos();
 
       f->seek(size_t(offset_table_pos) + i * sizeof(uint32_t));
@@ -455,12 +458,7 @@ Interleaf::Error Interleaf::Write(FileBase *f) const
 
 void Interleaf::WriteObject(FileBase *f, const Object *o) const
 {
-  size_t projected_end = f->pos() + o->CalculateMaximumDiskSize();
-  size_t this_buf = f->pos()/m_BufferSize;
-  size_t end_buf = projected_end/m_BufferSize;
-  if (this_buf != end_buf) {
-    WritePadding(f, (end_buf * m_BufferSize) - f->pos());
-  }
+  WritePaddingIfNecessary(f, o->CalculateMaximumDiskSize());
 
   RIFF::Chk mxob = RIFF::BeginChunk(f, RIFF::MxOb);
 
@@ -745,6 +743,16 @@ void Interleaf::WritePadding(FileBase *f, uint32_t size) const
   bytearray b(size);
   b.fill(0xCD);
   f->WriteBytes(b);
+}
+
+void Interleaf::WritePaddingIfNecessary(FileBase *f, size_t projectedWrite) const
+{
+  size_t projected_end = f->pos() + projectedWrite;
+  size_t this_buf = f->pos()/m_BufferSize;
+  size_t end_buf = projected_end/m_BufferSize;
+  if (this_buf != end_buf) {
+    WritePadding(f, (end_buf * m_BufferSize) - f->pos());
+  }
 }
 
 }

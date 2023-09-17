@@ -50,6 +50,7 @@ private:
   void WriteSubChunkInternal(FileBase *f, uint16_t flags, uint32_t object, uint32_t time, uint32_t data_sz, const bytearray &data) const;
 
   void WritePadding(FileBase *f, uint32_t size) const;
+  void WritePaddingIfNecessary(FileBase *f, size_t projectedWrite) const;
 
   Info m_Info;
 
