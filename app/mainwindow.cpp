@@ -151,6 +151,10 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
   auto current = static_cast<Panel*>(config_stack_->currentWidget());
   current->SetData(nullptr);
 
+  if (chunk && chunk->type() == MxOb::Null) {
+    chunk = nullptr;
+  }
+
   config_stack_->setCurrentWidget(panel);
   panel->SetData(chunk);
   last_set_data_ = chunk;
@@ -163,6 +167,11 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
     m_LocationEdit->SetValue(chunk->location_);
     m_UpEdit->SetValue(chunk->up_);
     start_time_edit_->setValue(chunk->time_offset_);
+  } else {
+    m_extraEdit->setPlainText(QString());
+    m_LocationEdit->SetValue(si::Vector3(0, 0, 0));
+    m_UpEdit->SetValue(si::Vector3(0, 0, 0));
+    start_time_edit_->setValue(0);
   }
 }
 
