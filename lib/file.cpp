@@ -112,7 +112,7 @@ void File::seek(File::pos_t p, SeekMode s)
 
   SetFilePointer(m_Handle, low, &high, m);
 #else
-  std::ios::seekdir d;
+  std::ios::seekdir d = std::ios::beg;
 
   switch (s) {
   case SeekStart:
