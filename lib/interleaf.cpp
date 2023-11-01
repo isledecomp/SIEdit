@@ -94,7 +94,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
   case RIFF::MxHd:
   {
     m_Version = f->ReadU32();
-    desc << "Version: " << m_Version << std::endl;
+    desc << "Version: 0x" << std::hex << m_Version << std::endl;
 
     m_BufferSize = f->ReadU32();
     desc << "Buffer Size: 0x" << std::hex << m_BufferSize;
