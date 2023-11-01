@@ -99,10 +99,8 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     m_BufferSize = f->ReadU32();
     desc << "Buffer Size: 0x" << std::hex << m_BufferSize;
 
-    if (m_Version == 0x00020002) {
-      m_BufferCount = f->ReadU32();
-      desc << std::endl << "Buffer Count: " << std::dec << m_BufferCount << std::endl;
-    }
+    m_BufferCount = f->ReadU32();
+    desc << std::endl << "Buffer Count: " << std::dec << m_BufferCount << std::endl;
     break;
   }
   case RIFF::pad_:
@@ -132,6 +130,11 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     desc << "Type: " << RIFF::PrintU32AsString(list_type) << std::endl;
     uint32_t list_count = 0;
     if (list_type == RIFF::MxCh) {
+      if (m_Version == Version2_1) {
+        uint32_t unknown_list_entry = f->ReadU32();
+        desc << "Unknown v2.1 list entry: " << unknown_list_entry << std::endl;
+      }
+
       list_count = f->ReadU32();
       if (list_count == LIST::Act_ || list_count == LIST::RAND) {
         desc << "Extension: ";
@@ -369,10 +372,7 @@ Interleaf::Error Interleaf::Write(FileBase *f) const
 
     f->WriteU32(m_Version);
     f->WriteU32(m_BufferSize);
-
-    if (m_Version == 0x00020002) {
-      f->WriteU32(m_BufferCount);
-    }
+    f->WriteU32(m_BufferCount);
 
     RIFF::EndChunk(f, mxhd);
   }

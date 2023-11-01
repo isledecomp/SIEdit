@@ -21,6 +21,12 @@ public:
     ERROR_INVALID_BUFFER_SIZE
   };
 
+  enum Version
+  {
+    Version2_1 = 0x00010002,
+    Version2_2 = 0x00020002
+  };
+
   LIBWEAVER_EXPORT Interleaf();
 
   LIBWEAVER_EXPORT void Clear();
