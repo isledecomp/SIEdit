@@ -127,17 +127,17 @@ void MainWindow::InitializeMenuBar()
 
   auto file_menu = menubar->addMenu(tr("&File"));
 
-  file_menu->addAction(tr("&New"), this, &MainWindow::NewFile, tr("Ctrl+N"));
+  file_menu->addAction(tr("&New"), tr("Ctrl+N"), this, &MainWindow::NewFile);
 
-  file_menu->addAction(tr("&Open"), this, &MainWindow::OpenFile, tr("Ctrl+O"));
+  file_menu->addAction(tr("&Open"), tr("Ctrl+O"), this, &MainWindow::OpenFile);
 
-  file_menu->addAction(tr("&Save"), this, &MainWindow::SaveFile, tr("Ctrl+S"));
+  file_menu->addAction(tr("&Save"), tr("Ctrl+S"), this, &MainWindow::SaveFile);
 
-  file_menu->addAction(tr("Save &As"), this, &MainWindow::SaveFileAs, tr("Ctrl+Shift+S"));
+  file_menu->addAction(tr("Save &As"), tr("Ctrl+Shift+S"), this, &MainWindow::SaveFileAs);
 
   file_menu->addSeparator();
 
-  file_menu->addAction(tr("&View SI File"), this, &MainWindow::ViewSIFile, tr("Ctrl+I"));
+  file_menu->addAction(tr("&View SI File"), tr("Ctrl+I"), this, &MainWindow::ViewSIFile);
 
   file_menu->addSeparator();
 

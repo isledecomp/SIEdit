@@ -10,13 +10,15 @@ extern "C" {
 
 #include <file.h>
 #include <object.h>
+
+#include <QAudioFormat>
 #include <QAudioOutput>
+#include <QAudioSink>
 #include <QCheckBox>
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
 #include <QTimer>
-
 #include "panel.h"
 
 class MediaInstance : public QIODevice
@@ -34,7 +36,7 @@ public:
     return m_Stream ? m_Stream->codecpar->codec_type : AVMEDIA_TYPE_UNKNOWN;
   }
 
-  bool StartPlayingAudio(const QAudioDeviceInfo &output_dev, const QAudioFormat &fmt);
+  bool StartPlayingAudio(const QAudioDevice &output_dev, const QAudioFormat &fmt);
 
   void Seek(float seconds);
 
@@ -156,7 +158,7 @@ private:
 
   std::vector<QLabel *> m_imgViewers;
   std::vector<MediaInstance *> m_mediaInstances;
-  std::vector<QAudioOutput *> m_audioOutputs;
+  std::vector<QAudioSink *> m_audioSinks;
 
   QSlider *m_PlayheadSlider;
   QPushButton *m_PlayBtn;
@@ -178,7 +180,7 @@ private slots:
 
   void LabelContextMenuTriggered(const QPoint &pos);
 
-  void AudioOutputEnded();
+  void AudioStateChanged(QAudio::State newState);
 
 };
 

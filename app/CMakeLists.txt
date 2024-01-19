@@ -1,6 +1,6 @@
-find_package(Qt5)
+find_package(Qt6)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Multimedia)
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Multimedia)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Multimedia)
 
 find_package(FFMPEG 3.0 REQUIRED

@@ -1,9 +1,12 @@
 #include "mediapanel.h"
 
 #include <othertypes.h>
+
+#include <QAudioSink>
 #include <QDateTime>
 #include <QDebug>
 #include <QGroupBox>
+#include <QMediaDevices>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QScrollArea>
@@ -27,7 +30,7 @@ MediaPanel::MediaPanel(QWidget *parent) :
   preview_layout->addWidget(viewer_scroll, 1);
 
   m_viewerLayout = new QVBoxLayout(viewer_inner);
-  m_viewerLayout->setMargin(0);
+  m_viewerLayout->setContentsMargins(0, 0, 0, 0);
 
   auto ctrl_layout = new QHBoxLayout();
   preview_layout->addLayout(ctrl_layout);
@@ -370,7 +373,7 @@ void MediaPanel::Play(bool e)
 {
   {
     // No matter what, stop any current audio
-    std::vector<QAudioOutput*> copy = m_audioOutputs;
+    std::vector<QAudioSink*> copy = m_audioSinks;
     for (auto it=copy.cbegin(); it!=copy.cend(); it++) {
       auto o = *it;
       o->stop();
@@ -388,7 +391,7 @@ void MediaPanel::Play(bool e)
 
     m_PlaybackOffset = GetSecondsFromSlider();
 
-    auto output_dev = QAudioDeviceInfo::defaultOutputDevice();
+    auto output_dev = QAudioDevice(QMediaDevices::defaultAudioOutput());
     auto fmt = output_dev.preferredFormat();
 
     for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
@@ -401,11 +404,11 @@ void MediaPanel::Play(bool e)
       } else if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
         if (m_PlaybackOffset < (m->GetDuration() + m->GetStartOffset())) {
           if (m->StartPlayingAudio(output_dev, fmt)) {
-            auto out = new QAudioOutput(output_dev, fmt, this);
+            auto out = new QAudioSink(output_dev, fmt, this);
             out->setVolume(m->GetVolume());
             out->start(m);
-            connect(out, &QAudioOutput::stateChanged, this, &MediaPanel::AudioOutputEnded);
-            m_audioOutputs.push_back(out);
+            connect(out, &QAudioSink::stateChanged, this, &MediaPanel::AudioStateChanged);
+            m_audioSinks.push_back(out);
             has_audio = true;
           }
         } else {
@@ -447,7 +450,7 @@ void MediaPanel::TimerUpdate()
 
   if (all_eof) {
     // Detach audio output so that it flushes itself
-    m_audioOutputs.clear();
+    m_audioSinks.clear();
 
     Play(false);
     m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
@@ -503,16 +506,18 @@ void MediaPanel::LabelContextMenuTriggered(const QPoint &pos)
   m.exec(static_cast<QWidget*>(sender())->mapToGlobal(pos));
 }
 
-void MediaPanel::AudioOutputEnded()
+void MediaPanel::AudioStateChanged(QAudio::State newState)
 {
-  auto out = static_cast<QAudioOutput*>(sender());
+  if (newState == QAudio::IdleState) {
+    auto out = static_cast<QAudioSink*>(sender());
 
-  auto it = std::find(m_audioOutputs.begin(), m_audioOutputs.end(), out);
-  if (it != m_audioOutputs.end()) {
-    m_audioOutputs.erase(it);
+    auto it = std::find(m_audioSinks.begin(), m_audioSinks.end(), out);
+    if (it != m_audioSinks.end()) {
+      m_audioSinks.erase(it);
+    }
+
+    delete out;
   }
-
-  delete out;
 }
 
 qint64 MediaInstance::readData(char *data, qint64 maxSize)
@@ -679,7 +684,7 @@ void MediaInstance::Close()
   m_Data.Close();
 }
 
-bool MediaInstance::StartPlayingAudio(const QAudioDeviceInfo &output_dev, const QAudioFormat &fmt)
+bool MediaInstance::StartPlayingAudio(const QAudioDevice &output_dev, const QAudioFormat &fmt)
 {
   if (m_SwrCtx) {
     swr_free(&m_SwrCtx);
@@ -687,38 +692,21 @@ bool MediaInstance::StartPlayingAudio(const QAudioDeviceInfo &output_dev, const 
   }
 
   AVSampleFormat smp_fmt = AV_SAMPLE_FMT_S16;
-  switch (fmt.sampleType()) {
+  switch (fmt.sampleFormat()) {
+  default:
   case QAudioFormat::Unknown:
     break;
-  case QAudioFormat::SignedInt:
-    switch (fmt.sampleSize()) {
-    case 16:
-      smp_fmt = AV_SAMPLE_FMT_S16;
-      break;
-    case 32:
-      smp_fmt = AV_SAMPLE_FMT_S32;
-      break;
-    case 64:
-      smp_fmt = AV_SAMPLE_FMT_S64;
-      break;
-    }
+  case QAudioFormat::Int16:
+    smp_fmt = AV_SAMPLE_FMT_S16;
     break;
-  case QAudioFormat::UnSignedInt:
-    switch (fmt.sampleSize()) {
-    case 8:
-      smp_fmt = AV_SAMPLE_FMT_U8;
-      break;
-    }
+  case QAudioFormat::Int32:
+    smp_fmt = AV_SAMPLE_FMT_S32;
+    break;
+  case QAudioFormat::UInt8:
+    smp_fmt = AV_SAMPLE_FMT_U8;
     break;
   case QAudioFormat::Float:
-    switch (fmt.sampleSize()) {
-    case 32:
-      smp_fmt = AV_SAMPLE_FMT_FLT;
-      break;
-    case 64:
-      smp_fmt = AV_SAMPLE_FMT_DBL;
-      break;
-    }
+    smp_fmt = AV_SAMPLE_FMT_FLT;
     break;
   }
 
