@@ -12,7 +12,7 @@ All of the SI-specific code is contained in a separate C++ library called **libw
 
 SIEdit and libweaver use the fairly standard CMake build system.
 
-**SIEdit** requires Qt 5+ and FFmpeg for the UI and media playback respectively.
+**SIEdit** requires Qt 6+ and FFmpeg for the UI and media playback respectively.
 
 **libweaver** uses only standard libraries from C++98, and shouldn't require anything special.
 
