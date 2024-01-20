@@ -394,6 +394,8 @@ void MediaPanel::Play(bool e)
     auto output_dev = QAudioDevice(QMediaDevices::defaultAudioOutput());
     auto fmt = output_dev.preferredFormat();
 
+    ClearAudioSinks();
+    
     for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
       auto m = *it;
 
@@ -407,7 +409,6 @@ void MediaPanel::Play(bool e)
             auto out = new QAudioSink(output_dev, fmt, this);
             out->setVolume(m->GetVolume());
             out->start(m);
-            connect(out, &QAudioSink::stateChanged, this, &MediaPanel::AudioStateChanged);
             m_audioSinks.push_back(out);
             has_audio = true;
           }
@@ -449,9 +450,7 @@ void MediaPanel::TimerUpdate()
   }
 
   if (all_eof) {
-    // Detach audio output so that it flushes itself
-    m_audioSinks.clear();
-
+    ClearAudioSinks();
     Play(false);
     m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
   }
@@ -506,17 +505,13 @@ void MediaPanel::LabelContextMenuTriggered(const QPoint &pos)
   m.exec(static_cast<QWidget*>(sender())->mapToGlobal(pos));
 }
 
-void MediaPanel::AudioStateChanged(QAudio::State newState)
+void MediaPanel::ClearAudioSinks()
 {
-  if (newState == QAudio::IdleState) {
-    auto out = static_cast<QAudioSink*>(sender());
+  if (m_audioSinks.size() != 0) {
+      for (auto s : m_audioSinks)
+        delete s;
 
-    auto it = std::find(m_audioSinks.begin(), m_audioSinks.end(), out);
-    if (it != m_audioSinks.end()) {
-      m_audioSinks.erase(it);
-    }
-
-    delete out;
+    m_audioSinks.clear();
   }
 }
 

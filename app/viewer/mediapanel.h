@@ -180,7 +180,7 @@ private slots:
 
   void LabelContextMenuTriggered(const QPoint &pos);
 
-  void AudioStateChanged(QAudio::State newState);
+  void ClearAudioSinks();
 
 };
 
