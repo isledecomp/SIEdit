@@ -420,7 +420,9 @@ void MediaPanel::Play(bool e)
 
     m_PlaybackStart = QDateTime::currentMSecsSinceEpoch();
     m_PlaybackTimer->start();
+    m_PlayBtn->setText("Pause");
   } else {
+    m_PlayBtn->setText("Play");
     m_PlaybackTimer->stop();
   }
   m_PlayBtn->setChecked(e);
