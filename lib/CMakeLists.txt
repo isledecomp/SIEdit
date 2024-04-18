@@ -27,6 +27,7 @@ endif()
 set_target_properties(libweaver PROPERTIES
   CXX_STANDARD 98
   CXX_STANDARD_REQUIRED ON
+  PREFIX ""
 )
 
 if(LIBWEAVER_BUILD_DOXYGEN)
