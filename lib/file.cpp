@@ -106,6 +106,7 @@ void File::seek(File::pos_t p, SeekMode s)
 
   DWORD m;
   switch (s) {
+  default:
   case SeekStart:
     m = FILE_BEGIN;
     break;
