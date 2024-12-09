@@ -40,6 +40,9 @@ typedef unsigned int        uint32_t;
 typedef int                 int32_t;
 typedef unsigned __int64    uint64_t;
 typedef __int64             int64_t;
+// TODO: is this a good spot for this?
+#define max(a,b)    (((a) > (b)) ? (a) : (b))
+#define min(a,b)    (((a) < (b)) ? (a) : (b))
 #else
 #include <stdint.h>
 #endif
@@ -87,7 +90,7 @@ public:
 
   bytearray left(size_t sz) const
   {
-    bytearray b(std::min(sz, this->size()));
+    bytearray b(min(sz, this->size()));
     memcpy(b.data(), this->data(), b.size());
     return b;
   }
@@ -100,7 +103,7 @@ public:
 
     size_t target = this->size() - i;
     if (size != 0) {
-      target = std::min(target, size);
+      target = min(target, size);
     }
 
     bytearray b(target);
@@ -118,6 +121,10 @@ public:
     memcpy(b.data(), this->data() + this->size() - i, b.size());
     return b;
   }
+
+  // TODO: don't conflict with ~~actually good~~ compilers
+  char *data() { return &(*this)[0]; }
+  const char *data() const { return &(*this)[0]; }
 
 };
 
@@ -176,7 +183,7 @@ public:
       return std::string();
     } else {
       // Subtract 1 from size, assuming the last character is a null terminator
-      return std::string(data_.data(), std::max(size_t(0), data_.size()-1));
+      return std::string(data_.data(), max(size_t(0), data_.size()-1));
     }
   }
 
