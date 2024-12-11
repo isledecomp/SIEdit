@@ -39,12 +39,13 @@ jobs:
       run: |
         curl -fLOSs https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/$FFMPEG_DIR.zip
         7z x $FFMPEG_DIR.zip
-        echo "$FFMPEG_DIR" >> $GITHUB_PATH
+        mv $FFMPEG_DIR C:/ffmpeg
+        echo "C:/ffmpeg" >> $GITHUB_PATH
 
     - name: Build
       shell: bash
       run: |
-        cmake . -G Ninja -DCMAKE_BUILD_TYPE=Release -DFFMPEG_INCLUDE_DIR=$FFMPEG_DIR/include -DFFMPEG_LIBRARY_DIR=$FFMPEG_DIR/lib
+        cmake . -G Ninja -DCMAKE_BUILD_TYPE=Release
         ninja
 
     - name: Deploy
@@ -53,7 +54,7 @@ jobs:
         mkdir deploy
         cp app/*.exe deploy
         cp lib/*.dll deploy
-        cp $FFMPEG_DIR/bin/*.dll deploy
+        cp C:/ffmpeg/bin/*.dll deploy
         cd deploy
         windeployqt si-edit.exe libweaver.dll
 
