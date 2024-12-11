@@ -58,7 +58,7 @@ jobs:
         windeployqt si-edit.exe libweaver.dll
 
     - name: Upload Build Artifact
-      uses: actions/upload-artifact@v2.2.1
+      uses: actions/upload-artifact@v4
       with:
         path:
           deploy
@@ -68,7 +68,7 @@ jobs:
       if: github.event_name == 'push'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TRAVIS_REPO_SLUG: itsmattkc/siedit
+        TRAVIS_REPO_SLUG: isledecomp/siedit
         TRAVIS_COMMIT: ${{ github.sha }}
       run: |
         cd deploy
