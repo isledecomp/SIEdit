@@ -17,7 +17,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      FFMPEG_DIR: ffmpeg-n4.4-latest-win64-gpl-shared-4.4
+      FFMPEG_DIR: ffmpeg-n5.1-latest-win64-gpl-shared-5.1
 
     steps:
     - name: Checkout
@@ -39,12 +39,11 @@ jobs:
       run: |
         curl -fLOSs https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/$FFMPEG_DIR.zip
         7z x $FFMPEG_DIR.zip
-        echo "$FFMPEG_DIR" >> $GITHUB_PATH
 
     - name: Build
       shell: bash
       run: |
-        cmake . -G Ninja -DCMAKE_BUILD_TYPE=Release
+        cmake . -G Ninja -DCMAKE_BUILD_TYPE=Release -DFFMPEG_ROOT=$FFMPEG_DIR
         ninja
 
     - name: Deploy
@@ -58,20 +57,20 @@ jobs:
         windeployqt si-edit.exe libweaver.dll
 
     - name: Upload Build Artifact
-      uses: actions/upload-artifact@v2.2.1
+      uses: actions/upload-artifact@v4
       with:
         path:
           deploy
 
-    - name: Upload to Releases
-      shell: bash
-      if: github.event_name == 'push'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TRAVIS_REPO_SLUG: itsmattkc/siedit
-        TRAVIS_COMMIT: ${{ github.sha }}
-      run: |
-        cd deploy
-        7z a libweaver.zip *
-        curl -fLOSs --retry 2 --retry-delay 60 https://github.com/probonopd/uploadtool/raw/master/upload.sh
-        ./upload.sh libweaver.zip
+#    - name: Upload to Releases
+#      shell: bash
+#      if: github.event_name == 'push'
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        TRAVIS_REPO_SLUG: isledecomp/siedit
+#        TRAVIS_COMMIT: ${{ github.sha }}
+#      run: |
+#        cd deploy
+#        7z a si-edit.zip *
+#        curl -fLOSs --retry 2 --retry-delay 60 https://github.com/probonopd/uploadtool/raw/master/upload.sh
+#        ./upload.sh si-edit.zip
