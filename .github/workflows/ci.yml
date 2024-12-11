@@ -17,7 +17,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      FFMPEG_DIR: ffmpeg-n4.4-latest-win64-gpl-shared-4.4
+      FFMPEG_DIR: ffmpeg-n5.1-latest-win64-gpl-shared-5.1
 
     steps:
     - name: Checkout
