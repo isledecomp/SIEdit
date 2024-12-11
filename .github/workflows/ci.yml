@@ -44,7 +44,7 @@ jobs:
     - name: Build
       shell: bash
       run: |
-        cmake . -G Ninja -DCMAKE_BUILD_TYPE=Release
+        cmake . -G Ninja -DCMAKE_BUILD_TYPE=Release -DFFMPEG_INCLUDE_DIR=$FFMPEG_DIR/include -DFFMPEG_LIBRARY_DIR=$FFMPEG_DIR/lib
         ninja
 
     - name: Deploy
@@ -72,6 +72,6 @@ jobs:
         TRAVIS_COMMIT: ${{ github.sha }}
       run: |
         cd deploy
-        7z a libweaver.zip *
+        7z a si-edit.zip *
         curl -fLOSs --retry 2 --retry-delay 60 https://github.com/probonopd/uploadtool/raw/master/upload.sh
-        ./upload.sh libweaver.zip
+        ./upload.sh si-edit.zip
