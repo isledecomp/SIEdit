@@ -62,15 +62,15 @@ jobs:
         path:
           deploy
 
-    - name: Upload to Releases
-      shell: bash
-      if: github.event_name == 'push'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TRAVIS_REPO_SLUG: isledecomp/siedit
-        TRAVIS_COMMIT: ${{ github.sha }}
-      run: |
-        cd deploy
-        7z a si-edit.zip *
-        curl -fLOSs --retry 2 --retry-delay 60 https://github.com/probonopd/uploadtool/raw/master/upload.sh
-        ./upload.sh si-edit.zip
+#    - name: Upload to Releases
+#      shell: bash
+#      if: github.event_name == 'push'
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        TRAVIS_REPO_SLUG: isledecomp/siedit
+#        TRAVIS_COMMIT: ${{ github.sha }}
+#      run: |
+#        cd deploy
+#        7z a si-edit.zip *
+#        curl -fLOSs --retry 2 --retry-delay 60 https://github.com/probonopd/uploadtool/raw/master/upload.sh
+#        ./upload.sh si-edit.zip
