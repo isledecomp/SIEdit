@@ -527,6 +527,11 @@ qint64 MediaInstance::writeData(const char *data, qint64 maxSize)
   return -1;
 }
 
+qint64 MediaInstance::size() const
+{
+  return SecondsToBytes(m_startOffset + GetDuration());
+}
+
 ClickableSlider::ClickableSlider(Qt::Orientation orientation, QWidget *parent) :
   QSlider(orientation, parent)
 {
@@ -787,4 +792,5 @@ float MediaInstance::BytesToSeconds(int64_t t)
 void MediaInstance::SetVirtualTime(float f)
 {
   m_virtualPosition = f - m_startOffset;
+  seek(SecondsToBytes(f));
 }
