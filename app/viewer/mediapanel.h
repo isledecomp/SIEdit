@@ -17,6 +17,7 @@ extern "C" {
 #include <QCheckBox>
 #include <QLabel>
 #include <QPushButton>
+#include <QShortcut>
 #include <QSlider>
 #include <QTimer>
 #include "panel.h"
@@ -188,6 +189,7 @@ private:
 
   QSlider *m_PlayheadSlider;
   QPushButton *m_PlayBtn;
+  QShortcut *m_PlayShortcut;
   QTimer *m_PlaybackTimer;
   qint64 m_PlaybackStart;
   float m_PlaybackOffset;

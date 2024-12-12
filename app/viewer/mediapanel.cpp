@@ -44,7 +44,9 @@ MediaPanel::MediaPanel(QWidget *parent) :
 
   m_PlayBtn = new QPushButton(tr("Play"));
   m_PlayBtn->setCheckable(true);
+  m_PlayShortcut = new QShortcut(QKeySequence(Qt::Key_Space), this);
   connect(m_PlayBtn, &QPushButton::clicked, this, &MediaPanel::Play);
+  connect(m_PlayShortcut, &QShortcut::activated, this, [this]() { Play(!IsPlaying()); });
   ctrl_layout->addWidget(m_PlayBtn);
 
   //FinishLayout();
