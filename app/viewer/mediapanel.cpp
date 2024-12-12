@@ -52,6 +52,11 @@ MediaPanel::MediaPanel(QWidget *parent) :
   m_PlaybackTimer = new QTimer(this);
   m_PlaybackTimer->setInterval(10);
   connect(m_PlaybackTimer, &QTimer::timeout, this, &MediaPanel::TimerUpdate);
+
+  m_audioSink = nullptr;
+
+  m_audioDevice = new MediaAudioMixer(this);
+  m_audioDevice->SetMediaInstances(&m_mediaInstances);
 }
 
 MediaPanel::~MediaPanel()
@@ -371,15 +376,6 @@ void MediaPanel::OpenMediaInstance(si::Object *o)
 
 void MediaPanel::Play(bool e)
 {
-  {
-    // No matter what, stop any current audio
-    std::vector<QAudioSink*> copy = m_audioSinks;
-    for (auto it=copy.cbegin(); it!=copy.cend(); it++) {
-      auto o = *it;
-      o->stop();
-    }
-  }
-
   if (e) {
     bool has_video = false;
     bool has_audio = false;
@@ -394,10 +390,11 @@ void MediaPanel::Play(bool e)
     auto output_dev = QAudioDevice(QMediaDevices::defaultAudioOutput());
     auto fmt = output_dev.preferredFormat();
 
-    ClearAudioSinks();
-    
-    for (auto it=m_mediaInstances.cbegin(); it!=m_mediaInstances.cend(); it++) {
-      auto m = *it;
+    // Require float output (makes our lives easier)
+    fmt.setSampleFormat(QAudioFormat::Float);
+
+    for (size_t i = 0; i < m_mediaInstances.size(); i++) {
+      auto m = m_mediaInstances[i];
 
       m->ResetEOF();
 
@@ -405,11 +402,11 @@ void MediaPanel::Play(bool e)
         has_video = true;
       } else if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
         if (m_PlaybackOffset < (m->GetDuration() + m->GetStartOffset())) {
-          if (m->StartPlayingAudio(output_dev, fmt)) {
-            auto out = new QAudioSink(output_dev, fmt, this);
-            out->setVolume(m->GetVolume());
-            out->start(m);
-            m_audioSinks.push_back(out);
+          if (m->SetUpResampleContext(fmt)) {
+            // auto out = new QAudioSink(output_dev, fmt, this);
+            // out->setVolume(m->GetVolume());
+            // out->start(m);
+            // m_audioSinks.push_back(out);
             has_audio = true;
           }
         } else {
@@ -418,12 +415,28 @@ void MediaPanel::Play(bool e)
       }
     }
 
+    if (has_audio) {
+        m_audioDevice->SetAudioFormat(fmt);
+        m_audioDevice->open(QIODevice::ReadOnly);
+        m_audioDevice->SeekInSeconds(GetSecondsFromSlider());
+
+        m_audioSink = new QAudioSink(output_dev, fmt, this);
+        m_audioSink->start(m_audioDevice);
+    }
+
     m_PlaybackStart = QDateTime::currentMSecsSinceEpoch();
     m_PlaybackTimer->start();
     m_PlayBtn->setText("Pause");
   } else {
     m_PlayBtn->setText("Play");
     m_PlaybackTimer->stop();
+
+    if (m_audioSink) {
+        m_audioDevice->close();
+        m_audioSink->stop();
+        m_audioSink->deleteLater();
+        m_audioSink = nullptr;
+    }
   }
   m_PlayBtn->setChecked(e);
 }
@@ -452,7 +465,6 @@ void MediaPanel::TimerUpdate()
   }
 
   if (all_eof) {
-    ClearAudioSinks();
     Play(false);
     m_PlayheadSlider->setValue(m_PlayheadSlider->maximum());
   }
@@ -507,26 +519,6 @@ void MediaPanel::LabelContextMenuTriggered(const QPoint &pos)
   m.exec(static_cast<QWidget*>(sender())->mapToGlobal(pos));
 }
 
-void MediaPanel::ClearAudioSinks()
-{
-  if (m_audioSinks.size() != 0) {
-      for (auto s : m_audioSinks)
-        delete s;
-
-    m_audioSinks.clear();
-  }
-}
-
-qint64 MediaInstance::readData(char *data, qint64 maxSize)
-{
-  return ReadAudio(data, maxSize);
-}
-
-qint64 MediaInstance::writeData(const char *data, qint64 maxSize)
-{
-  return -1;
-}
-
 ClickableSlider::ClickableSlider(Qt::Orientation orientation, QWidget *parent) :
   QSlider(orientation, parent)
 {
@@ -547,6 +539,7 @@ void ClickableSlider::mousePressEvent(QMouseEvent *e)
 }
 
 MediaInstance::MediaInstance(QObject *parent) :
+  QObject(parent),
   m_FmtCtx(nullptr),
   m_Packet(nullptr),
   m_CodecCtx(nullptr),
@@ -557,7 +550,6 @@ MediaInstance::MediaInstance(QObject *parent) :
   m_IoCtx(nullptr),
   m_startOffset(0.0f)
 {
-  this->open(QIODevice::ReadOnly);
 }
 
 void MediaInstance::Open(const si::bytearray &buf)
@@ -681,7 +673,7 @@ void MediaInstance::Close()
   m_Data.Close();
 }
 
-bool MediaInstance::StartPlayingAudio(const QAudioDevice &output_dev, const QAudioFormat &fmt)
+bool MediaInstance::SetUpResampleContext(const QAudioFormat &fmt)
 {
   if (m_SwrCtx) {
     swr_free(&m_SwrCtx);
@@ -724,6 +716,8 @@ bool MediaInstance::StartPlayingAudio(const QAudioDevice &output_dev, const QAud
                               0, nullptr);
   if (r < 0) {
     qCritical() << "Failed to alloc swr ctx:" << r;
+    return false;
+  }
 #else
   m_SwrCtx = swr_alloc_set_opts(nullptr,
                                 av_get_default_channel_layout(fmt.channelCount()),
@@ -735,19 +729,19 @@ bool MediaInstance::StartPlayingAudio(const QAudioDevice &output_dev, const QAud
                                 0, nullptr);
   if (!m_SwrCtx) {
     qCritical() << "Failed to alloc swr ctx";
+    return false;
+  }
 #endif
-  } else {
-    if (swr_init(m_SwrCtx) < 0) {
-      qCritical() << "Failed to init swr ctx";
-    } else {
-      m_AudioFlushed = false;
-      m_AudioBuffer.clear();
 
-      return true;
-    }
+  if (swr_init(m_SwrCtx) < 0) {
+      qCritical() << "Failed to init swr ctx";
+      return false;
   }
 
-  return false;
+  m_AudioFlushed = false;
+  m_AudioBuffer.clear();
+
+  return true;
 }
 
 void MediaInstance::Seek(float seconds)
@@ -787,4 +781,75 @@ float MediaInstance::BytesToSeconds(int64_t t)
 void MediaInstance::SetVirtualTime(float f)
 {
   m_virtualPosition = f - m_startOffset;
+}
+
+MediaAudioMixer::MediaAudioMixer(QObject *parent) :
+    QIODevice(parent)
+{
+    m_mediaInstances = nullptr;
+}
+
+void MediaAudioMixer::SeekInSeconds(float f)
+{
+    seek(m_audioFormat.bytesForDuration(f * 1000000));
+}
+
+qint64 MediaAudioMixer::readData(char *data, qint64 maxSize)
+{
+    if (!m_mediaInstances) {
+        return 0;
+    }
+
+    // Media instances should be set to same sample rate and channel count as output, but we may need to convert format
+    float *output = reinterpret_cast<float *>(data);
+
+    qint64 maxSamples = maxSize / m_audioFormat.bytesPerSample();
+
+    float *tmp = new float[maxSamples];
+
+    qint64 touchedBytes = 0;
+
+    for (auto it = m_mediaInstances->cbegin(); it != m_mediaInstances->cend(); it++) {
+        auto m = *it;
+
+        if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
+            qint64 thisRead = m->ReadAudio(reinterpret_cast<char *>(tmp), maxSize);
+            if (thisRead > touchedBytes) {
+                memset(data + touchedBytes, 0, thisRead - touchedBytes);
+                touchedBytes = thisRead;
+            }
+
+            // TODO: Optimize with SSE and NEON
+            qint64 thisSamples = thisRead / m_audioFormat.bytesPerSample();
+            for (qint64 j = 0; j < thisSamples; j++) {
+                output[j] += tmp[j] * m->GetVolume();
+            }
+        }
+    }
+
+    delete [] tmp;
+
+    return touchedBytes;
+}
+
+qint64 MediaAudioMixer::writeData(const char *data, qint64 maxSize)
+{
+    return -1;
+}
+
+qint64 MediaAudioMixer::size() const
+{
+    if (!m_mediaInstances) {
+        return 0;
+    }
+
+    // Calculate maximum duration in seconds
+    float maxLength = 0;
+    for (auto it = m_mediaInstances->cbegin(); it != m_mediaInstances->cend(); it++) {
+        auto m = *it;
+        maxLength = qMax(maxLength, m->GetDuration() + m->GetStartOffset());
+    }
+
+    // Convert seconds to bytes in the output format
+    return m_audioFormat.bytesForDuration(maxLength * 1000000);
 }

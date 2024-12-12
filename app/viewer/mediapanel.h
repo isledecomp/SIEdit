@@ -21,7 +21,7 @@ extern "C" {
 #include <QTimer>
 #include "panel.h"
 
-class MediaInstance : public QIODevice
+class MediaInstance : public QObject
 {
   Q_OBJECT
 public:
@@ -36,7 +36,7 @@ public:
     return m_Stream ? m_Stream->codecpar->codec_type : AVMEDIA_TYPE_UNKNOWN;
   }
 
-  bool StartPlayingAudio(const QAudioDevice &output_dev, const QAudioFormat &fmt);
+  bool SetUpResampleContext(const QAudioFormat &fmt);
 
   void Seek(float seconds);
 
@@ -82,10 +82,6 @@ public:
 signals:
   void EndOfFile();
 
-protected:
-  virtual qint64 readData(char *data, qint64 maxSize) override;
-  virtual qint64 writeData(const char *data, qint64 maxSize) override;
-
 private:
   void ClearQueue();
 
@@ -123,6 +119,34 @@ private:
 
 };
 
+class MediaAudioMixer : public QIODevice
+{
+    Q_OBJECT
+public:
+    MediaAudioMixer(QObject *parent = nullptr);
+
+    void SetMediaInstances(std::vector<MediaInstance *> *mi)
+    {
+        m_mediaInstances = mi;
+    }
+
+    void SetAudioFormat(const QAudioFormat &fmt)
+    {
+        m_audioFormat = fmt;
+    }
+
+    void SeekInSeconds(float f);
+
+protected:
+    virtual qint64 readData(char *data, qint64 maxSize) override;
+    virtual qint64 writeData(const char *data, qint64 maxSize) override;
+    virtual qint64 size() const override;
+
+private:
+    std::vector<MediaInstance *> *m_mediaInstances;
+    QAudioFormat m_audioFormat;
+};
+
 class MediaPanel : public Panel
 {
   Q_OBJECT
@@ -158,7 +182,9 @@ private:
 
   std::vector<QLabel *> m_imgViewers;
   std::vector<MediaInstance *> m_mediaInstances;
-  std::vector<QAudioSink *> m_audioSinks;
+
+  QAudioSink *m_audioSink;
+  MediaAudioMixer *m_audioDevice;
 
   QSlider *m_PlayheadSlider;
   QPushButton *m_PlayBtn;
@@ -179,8 +205,6 @@ private slots:
   void SliderReleased();
 
   void LabelContextMenuTriggered(const QPoint &pos);
-
-  void ClearAudioSinks();
 
 };
 
