@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 
-#include <iostream>
 #include <QFileDialog>
 #include <QLineEdit>
 #include <QMenuBar>
@@ -139,6 +138,8 @@ void MainWindow::InitializeMenuBar()
 
   file_menu->addAction(tr("&View SI File"), tr("Ctrl+I"), this, &MainWindow::ViewSIFile);
 
+  file_menu->addAction(tr("E&xtract All"), this, &MainWindow::ExtractAll);
+
   file_menu->addSeparator();
 
   file_menu->addAction(tr("E&xit"), this, &MainWindow::close);
@@ -242,6 +243,39 @@ bool MainWindow::OpenInterleafFileInternal(QWidget *parent, si::Interleaf *inter
 QString MainWindow::GetOpenFileName()
 {
   return QFileDialog::getOpenFileName(this, QString(), QString(), kFileFilter);
+}
+
+bool MainWindow::ExtractAllRecursiveInternal(const QDir &dir, const si::Core *obj)
+{
+  if (!dir.mkpath(QStringLiteral("."))) {
+    QMessageBox::critical(this, tr("Extract All Failed"), tr("Failed to create directory \"%1\". Try extracting somewhere else.").arg(dir.absolutePath()));
+    return false;
+  }
+
+  for (const Core *child : obj->GetChildren()) {
+    if (const Object *obj = dynamic_cast<const Object*>(child)) {
+      if (!obj->data().empty()) {
+        QString realFilename = QString::fromStdString(obj->filename());
+        realFilename = realFilename.mid(realFilename.lastIndexOf('\\')+1);
+
+        QString output = dir.filePath(realFilename);
+
+        if (!obj->ExtractToFile(output.toUtf8())) {
+          QMessageBox::critical(this, tr("Extract All Failed"), tr("Failed to create file \"%1\". Try extracting somewhere else.").arg(output));
+          return false;
+        }
+      }
+
+      if (obj->HasChildren()) {
+        // Extract its children too
+        if (!ExtractAllRecursiveInternal(QDir(dir.filePath(QString::fromStdString(obj->name()))), obj)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
 }
 
 void MainWindow::NewFile()
@@ -352,6 +386,22 @@ void MainWindow::ViewSIFile()
       v->show();
     }
   }
+}
+
+void MainWindow::ExtractAll()
+{
+  QString s = QFileDialog::getExistingDirectory(this, tr("Extract All To..."));
+  if (s.isEmpty()) {
+    return;
+  }
+
+  QDir dir(s);
+  if (!dir.exists()) {
+    QMessageBox::critical(this, tr("Extract All Failed"), tr("Directory \"%1\" is not valid. Try extracting somewhere else.").arg(s));
+    return;
+  }
+
+  ExtractAllRecursiveInternal(dir, &interleaf_);
 }
 
 void MainWindow::ExtraChanged()

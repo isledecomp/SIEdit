@@ -3,6 +3,7 @@
 
 #include <interleaf.h>
 #include <object.h>
+#include <QDir>
 #include <QGroupBox>
 #include <QMainWindow>
 #include <QPlainTextEdit>
@@ -35,6 +36,8 @@ private:
   static bool OpenInterleafFileInternal(QWidget *parent, si::Interleaf *interleaf, const QString &s);
 
   QString GetOpenFileName();
+
+  bool ExtractAllRecursiveInternal(const QDir &dir, const si::Core *obj);
 
   static const QString kFileFilter;
 
@@ -78,6 +81,7 @@ private slots:
   void ReplaceClicked();
 
   void ViewSIFile();
+  void ExtractAll();
 
   void ExtraChanged();
   void LocationChanged(const si::Vector3 &v);
