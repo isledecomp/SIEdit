@@ -812,16 +812,18 @@ qint64 MediaAudioMixer::readData(char *data, qint64 maxSize)
     for (auto it = m_mediaInstances->cbegin(); it != m_mediaInstances->cend(); it++) {
         auto m = *it;
 
-        qint64 thisRead = m->ReadAudio(reinterpret_cast<char *>(tmp), maxSize);
-        if (thisRead > touchedBytes) {
-            memset(data + touchedBytes, 0, thisRead - touchedBytes);
-            touchedBytes = thisRead;
-        }
+        if (m->codec_type() == AVMEDIA_TYPE_AUDIO) {
+            qint64 thisRead = m->ReadAudio(reinterpret_cast<char *>(tmp), maxSize);
+            if (thisRead > touchedBytes) {
+                memset(data + touchedBytes, 0, thisRead - touchedBytes);
+                touchedBytes = thisRead;
+            }
 
-        // TODO: Optimize with SSE and NEON
-        qint64 thisSamples = thisRead / m_audioFormat.bytesPerSample();
-        for (qint64 j = 0; j < thisSamples; j++) {
-            output[j] += tmp[j] * m->GetVolume();
+            // TODO: Optimize with SSE and NEON
+            qint64 thisSamples = thisRead / m_audioFormat.bytesPerSample();
+            for (qint64 j = 0; j < thisSamples; j++) {
+                output[j] += tmp[j] * m->GetVolume();
+            }
         }
     }
 
