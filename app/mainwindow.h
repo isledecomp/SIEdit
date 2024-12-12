@@ -3,12 +3,12 @@
 
 #include <interleaf.h>
 #include <object.h>
+#include <QDir>
 #include <QGroupBox>
 #include <QMainWindow>
 #include <QPlainTextEdit>
 #include <QStackedWidget>
 #include <QTreeView>
-#include <qdir.h>
 
 #include "objectmodel.h"
 #include "panel.h"
