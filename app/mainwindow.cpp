@@ -180,15 +180,7 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
 void MainWindow::UpdateWindowTitle(QString filename)
 {
   TrimOffDirectory(filename);
-  setWindowTitle(QStringLiteral("%1 - %2").arg(QApplication::applicationName(), filename));
-}
-
-void MainWindow::AppendModifiedTitleIndicator()
-{
-  QString title = windowTitle();
-  title.append("*");
-
-  setWindowTitle(title);
+  setWindowTitle(QStringLiteral("%1 - %2[*]").arg(QApplication::applicationName(), filename));
 }
 
 void MainWindow::ExtractObject(si::Object *obj)
@@ -227,7 +219,8 @@ void MainWindow::ReplaceObject(si::Object *obj)
 #endif
         )) {
       static_cast<Panel*>(config_stack_->currentWidget())->ResetData();
-      AppendModifiedTitleIndicator();
+      setWindowModified(true);
+
     } else {
       QMessageBox::critical(this, QString(), tr("Failed to open to file \"%1\".").arg(s));
     }

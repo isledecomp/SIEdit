@@ -42,7 +42,6 @@ private:
   void TrimOffDirectory(QString &s);
 
   void UpdateWindowTitle(QString filename);
-  void AppendModifiedTitleIndicator();
 
   static const QString kFileFilter;
 
