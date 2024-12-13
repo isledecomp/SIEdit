@@ -303,6 +303,8 @@ void MainWindow::TrimOffDirectory(QString& s)
 
 void MainWindow::NewFile()
 {
+  tree_->clearSelection();
+  SetPanel(panel_blank_, nullptr);
   model_.SetCore(nullptr);
   interleaf_.Clear();
   model_.SetCore(&interleaf_);
