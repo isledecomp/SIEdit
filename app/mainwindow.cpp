@@ -177,21 +177,18 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
   }
 }
 
-void MainWindow::UpdateWindowTitleFlag(bool isFileModified)
+void MainWindow::UpdateWindowTitle(QString filename)
+{
+  TrimOffDirectory(filename);
+  setWindowTitle(QStringLiteral("%1 - %2").arg(QApplication::applicationName(), filename));
+}
+
+void MainWindow::AppendModifiedTitleIndicator()
 {
   QString title = windowTitle();
+  title.append("*");
 
-  if (isFileModified) {
-    if (!title.endsWith("*")) {
-      title.append("*");
-      setWindowTitle(title);
-    }
-  } else {
-    if (title.endsWith("*")) {
-      // trim off asterisk
-      setWindowTitle(title.left(title.length() - 1));
-    }
-  }
+  setWindowTitle(title);
 }
 
 void MainWindow::ExtractObject(si::Object *obj)
@@ -230,7 +227,7 @@ void MainWindow::ReplaceObject(si::Object *obj)
 #endif
         )) {
       static_cast<Panel*>(config_stack_->currentWidget())->ResetData();
-      UpdateWindowTitleFlag(true);
+      AppendModifiedTitleIndicator();
     } else {
       QMessageBox::critical(this, QString(), tr("Failed to open to file \"%1\".").arg(s));
     }
@@ -309,6 +306,8 @@ void MainWindow::NewFile()
   model_.SetCore(nullptr);
   interleaf_.Clear();
   model_.SetCore(&interleaf_);
+
+  UpdateWindowTitle(tr("UNTITLED.SI"));
 }
 
 void MainWindow::OpenFile()
@@ -316,9 +315,7 @@ void MainWindow::OpenFile()
   QString s = GetOpenFileName();
   if (!s.isEmpty()) {
     OpenFilename(s);
-    TrimOffDirectory(s);
-
-    setWindowTitle(QStringLiteral("%1 - %2").arg(QApplication::applicationName(), s));
+    UpdateWindowTitle(s);
   }
 }
 
@@ -336,7 +333,7 @@ bool MainWindow::SaveFile()
     );
 
     if (r == Interleaf::ERROR_SUCCESS) {
-      UpdateWindowTitleFlag(false);
+      UpdateWindowTitle(current_filename_);
       return true;
     } else {
       QMessageBox::critical(this, QString(), tr("Failed to write SI file: %1").arg(r));

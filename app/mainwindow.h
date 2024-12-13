@@ -29,7 +29,6 @@ private:
   void InitializeMenuBar();
 
   void SetPanel(Panel *panel, si::Object *chunk);
-  void UpdateWindowTitleFlag(bool isFileModified);
 
   void ExtractObject(si::Object *obj);
   void ReplaceObject(si::Object *obj);
@@ -41,6 +40,9 @@ private:
   bool ExtractAllRecursiveInternal(const QDir &dir, const si::Core *obj);
 
   void TrimOffDirectory(QString &s);
+
+  void UpdateWindowTitle(QString filename);
+  void AppendModifiedTitleIndicator();
 
   static const QString kFileFilter;
 
