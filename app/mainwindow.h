@@ -39,6 +39,8 @@ private:
 
   bool ExtractAllRecursiveInternal(const QDir &dir, const si::Core *obj);
 
+  void TrimOffDirectory(QString &s);
+
   static const QString kFileFilter;
 
   QStackedWidget *config_stack_;
