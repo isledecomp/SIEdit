@@ -29,6 +29,7 @@ private:
   void InitializeMenuBar();
 
   void SetPanel(Panel *panel, si::Object *chunk);
+  void UpdateWindowTitleFlag(bool isFileModified);
 
   void ExtractObject(si::Object *obj);
   void ReplaceObject(si::Object *obj);

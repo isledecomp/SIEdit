@@ -177,6 +177,23 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
   }
 }
 
+void MainWindow::UpdateWindowTitleFlag(bool isFileModified)
+{
+  QString title = windowTitle();
+
+  if (isFileModified) {
+    if (!title.endsWith("*")) {
+      title.append("*");
+      setWindowTitle(title);
+    }
+  } else {
+    if (title.endsWith("*")) {
+      // trim off asterisk
+      setWindowTitle(title.left(title.length() - 1));
+    }
+  }
+}
+
 void MainWindow::ExtractObject(si::Object *obj)
 {
   QString filename = QString::fromStdString(obj->filename());
@@ -213,6 +230,7 @@ void MainWindow::ReplaceObject(si::Object *obj)
 #endif
         )) {
       static_cast<Panel*>(config_stack_->currentWidget())->ResetData();
+      UpdateWindowTitleFlag(true);
     } else {
       QMessageBox::critical(this, QString(), tr("Failed to open to file \"%1\".").arg(s));
     }
@@ -318,6 +336,7 @@ bool MainWindow::SaveFile()
     );
 
     if (r == Interleaf::ERROR_SUCCESS) {
+      UpdateWindowTitleFlag(false);
       return true;
     } else {
       QMessageBox::critical(this, QString(), tr("Failed to write SI file: %1").arg(r));
