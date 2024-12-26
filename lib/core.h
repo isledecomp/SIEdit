@@ -1,5 +1,5 @@
-#ifndef CORE_H
-#define CORE_H
+#ifndef __LIBWEAVER_CORE_H
+#define __LIBWEAVER_CORE_H
 
 #include <algorithm>
 #include <vector>
@@ -47,4 +47,4 @@ private:
 
 }
 
-#endif // CORE_H
+#endif // __LIBWEAVER_CORE_H

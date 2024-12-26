@@ -1,5 +1,5 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef __LIBWEAVER_TYPES_H
+#define __LIBWEAVER_TYPES_H
 
 #include <algorithm>
 #include <cstdio>
@@ -212,4 +212,4 @@ private:
 
 }
 
-#endif // TYPES_H
+#endif // __LIBWEAVER_TYPES_H

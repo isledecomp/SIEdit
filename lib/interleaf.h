@@ -1,5 +1,5 @@
-#ifndef INTERLEAF_H
-#define INTERLEAF_H
+#ifndef __LIBWEAVER_INTERLEAF_H
+#define __LIBWEAVER_INTERLEAF_H
 
 #include <fstream>
 
@@ -74,4 +74,4 @@ private:
 
 }
 
-#endif // INTERLEAF_H
+#endif // __LIBWEAVER_INTERLEAF_H

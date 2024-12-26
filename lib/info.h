@@ -1,5 +1,5 @@
-#ifndef INFO_H
-#define INFO_H
+#ifndef __LIBWEAVER_INFO_H
+#define __LIBWEAVER_INFO_H
 
 #include "core.h"
 
@@ -51,4 +51,4 @@ private:
 
 }
 
-#endif // INFO_H
+#endif // __LIBWEAVER_INFO_H

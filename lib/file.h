@@ -1,5 +1,5 @@
-#ifndef FILE_H
-#define FILE_H
+#ifndef __LIBWEAVER_FILE_H
+#define __LIBWEAVER_FILE_H
 
 #include "types.h"
 
@@ -108,4 +108,4 @@ private:
 
 }
 
-#endif // FILE_H
+#endif // __LIBWEAVER_FILE_H

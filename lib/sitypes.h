@@ -1,5 +1,5 @@
-#ifndef SI_H
-#define SI_H
+#ifndef __LIBWEAVER_SI_H
+#define __LIBWEAVER_SI_H
 
 #include <fstream>
 
@@ -254,4 +254,4 @@ public:
 
 }
 
-#endif // SI_H
+#endif // __LIBWEAVER_SI_H

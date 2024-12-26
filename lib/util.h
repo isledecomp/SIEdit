@@ -1,5 +1,5 @@
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef __LIBWEAVER_UTIL_H
+#define __LIBWEAVER_UTIL_H
 
 #include <fstream>
 #include <iostream>
@@ -25,4 +25,4 @@ inline std::ostream &LogError()
 
 }
 
-#endif // UTIL_H
+#endif // __LIBWEAVER_UTIL_H

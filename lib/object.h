@@ -1,5 +1,5 @@
-#ifndef OBJECT_H
-#define OBJECT_H
+#ifndef __LIBWEAVER_OBJECT_H
+#define __LIBWEAVER_OBJECT_H
 
 #include "core.h"
 #include "sitypes.h"
@@ -74,4 +74,4 @@ private:
 
 }
 
-#endif // OBJECT_H
+#endif // __LIBWEAVER_OBJECT_H

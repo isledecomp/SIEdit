@@ -1,5 +1,5 @@
-#ifndef OTHERTYPES_H
-#define OTHERTYPES_H
+#ifndef __LIBWEAVER_OTHERTYPES_H
+#define __LIBWEAVER_OTHERTYPES_H
 
 #include "types.h"
 
@@ -96,4 +96,4 @@ public:
 
 }
 
-#endif // OTHERTYPES_H
+#endif // __LIBWEAVER_OTHERTYPES_H
