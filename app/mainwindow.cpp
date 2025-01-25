@@ -105,6 +105,8 @@ MainWindow::MainWindow(QWidget *parent) :
   splitter->setSizes({99999, 99999});
 
   setWindowTitle(tr("SI Editor"));
+
+  SetPanel(panel_blank_, nullptr);
 }
 
 void MainWindow::OpenFilename(const QString &s)
