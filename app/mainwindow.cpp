@@ -178,6 +178,11 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
 
 void MainWindow::ExtractObject(si::Object *obj)
 {
+  if (!obj) {
+    QMessageBox::critical(this, QString(), tr("Failed to extract file (not initialized)"));
+    return;
+  }
+
   QString filename = QString::fromStdString(obj->filename());
   if (filename.isEmpty()) {
     filename = QString::fromStdString(obj->name());
@@ -206,6 +211,11 @@ void MainWindow::ExtractObject(si::Object *obj)
 
 void MainWindow::ReplaceObject(si::Object *obj)
 {
+  if (!obj) {
+    QMessageBox::critical(this, QString(), tr("Failed to replace file (not initialized)"));
+    return;
+  }
+
   QString s = QFileDialog::getOpenFileName(this, tr("Replace Object"));
   if (!s.isEmpty()) {
     if (obj->ReplaceWithFile(
