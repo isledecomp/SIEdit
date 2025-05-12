@@ -29,9 +29,10 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
 
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v4
       with:
         version: '6.9'
+        arch: 'win64_msvc2022_64'
         modules: 'qtmultimedia'
 
     - name: Install FFmpeg
