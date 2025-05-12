@@ -26,6 +26,7 @@ jobs:
       uses: jurplel/install-qt-action@v4
       with:
         version: '6.9'
+        arch: 'linux_gcc_64'
         modules: 'qtmultimedia'
 
     - name: Install build dependencies
