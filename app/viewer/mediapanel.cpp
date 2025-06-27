@@ -302,7 +302,11 @@ void MediaPanel::VideoUpdate(float t)
         auto v = m_imgViewers.at(i);
 
         if (v->property("vflip").toBool()) {
-          img = img.flipped(Qt::Vertical);
+          #if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+            img = img.flipped(Qt::Vertical);
+          #else
+            img = img.mirrored(false, true);
+          #endif
         }
 
         v->setPixmap(QPixmap::fromImage(img));
