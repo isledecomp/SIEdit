@@ -105,6 +105,7 @@ MainWindow::MainWindow(QWidget *parent) :
   splitter->setSizes({99999, 99999});
 
   setWindowTitle(tr("SI Editor"));
+  setWindowIcon(QIcon(QString("://icon.svg")));
 
   SetPanel(panel_blank_, nullptr);
 }
