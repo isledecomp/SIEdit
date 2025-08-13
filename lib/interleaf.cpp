@@ -28,13 +28,13 @@ void Interleaf::Clear()
   DeleteChildren();
 }
 
-Interleaf::Error Interleaf::Read(const char *f)
+Interleaf::Error Interleaf::Read(const char *f, int flags)
 {
   File is;
   if (!is.Open(f, File::Read)) {
     return ERROR_IO;
   }
-  return Read(&is);
+  return Read(&is, flags);
 }
 
 Interleaf::Error Interleaf::Write(const char *f) const
@@ -47,13 +47,13 @@ Interleaf::Error Interleaf::Write(const char *f) const
 }
 
 #ifdef _WIN32
-Interleaf::Error Interleaf::Read(const wchar_t *f)
+Interleaf::Error Interleaf::Read(const wchar_t *f, int flags)
 {
   File is;
   if (!is.Open(f, File::Read)) {
     return ERROR_IO;
   }
-  return Read(&is);
+  return Read(&is, flags);
 }
 
 Interleaf::Error Interleaf::Write(const wchar_t *f) const
@@ -73,11 +73,15 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
   uint32_t size = f->ReadU32();
   uint32_t end = uint32_t(f->pos()) + size;
 
-  info->SetType(id);
-  info->SetOffset(offset);
-  info->SetSize(size);
+  if (info) {
+    info->SetType(id);
+    info->SetOffset(offset);
+    info->SetSize(size);
+  }
 
-  std::stringstream desc;
+  std::stringstream real_desc;
+  NullStream null_desc;
+  std::ostream& desc = info ? (std::ostream&) real_desc : (std::ostream&) null_desc;
 
   switch (static_cast<RIFF::Type>(id)) {
   case RIFF::RIFF_:
@@ -186,7 +190,9 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
 
     ReadObject(f, o, desc);
 
-    info->SetObjectID(o->id());
+    if (info) {
+      info->SetObjectID(o->id());
+    }
 
     m_ObjectIDTable[o->id()] = o;
 
@@ -207,10 +213,17 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     uint32_t data_sz = f->ReadU32();
     desc << "Size: " << data_sz << std::endl;
 
+    if (m_readFlags & HeadersOnly) {
+      f->seek(size - MxCh::HEADER_SIZE, FileBase::SeekCurrent);
+      break;
+    }
+
     bytearray data = f->ReadBytes(size - MxCh::HEADER_SIZE);
 
-    info->SetObjectID(object);
-    info->SetData(data);
+    if (info) {
+      info->SetObjectID(object);
+      info->SetData(data);
+    }
 
     if (!(flags & MxCh::FLAG_END)) {
       std::map<uint32_t, Object*>::iterator it = m_ObjectIDTable.find(object);
@@ -257,15 +270,20 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     }
 
     // Read next child
-    Info *subinfo = new Info();
-    info->AppendChild(subinfo);
+    Info *subinfo = NULL;
+    if (info) {
+      subinfo = new Info();
+      info->AppendChild(subinfo);
+    }
     Error e = ReadChunk(parent, f, subinfo);
     if (e != ERROR_SUCCESS) {
       return e;
     }
   }
 
-  info->SetDescription(desc.str());
+  if (info) {
+    info->SetDescription(real_desc.str());
+  }
 
   if (f->pos() < end) {
     f->seek(end, File::SeekStart);
@@ -278,7 +296,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
   return ERROR_SUCCESS;
 }
 
-Object *Interleaf::ReadObject(FileBase *f, Object *o, std::stringstream &desc)
+Object *Interleaf::ReadObject(FileBase *f, Object *o, std::ostream &desc)
 {
   o->type_ = static_cast<MxOb::Type>(f->ReadU16());
   desc << "Type: " << o->type_ << std::endl;
@@ -340,10 +358,11 @@ Object *Interleaf::ReadObject(FileBase *f, Object *o, std::stringstream &desc)
   return o;
 }
 
-Interleaf::Error Interleaf::Read(FileBase *f)
+Interleaf::Error Interleaf::Read(FileBase *f, int flags)
 {
   Clear();
-  return ReadChunk(this, f, &m_Info);
+  m_readFlags = flags;
+  return ReadChunk(this, f, m_readFlags & NoInfo ? NULL : &m_Info);
 }
 
 void RecursivelyAddObjectToList(std::vector<Object*> *list, Object *o)

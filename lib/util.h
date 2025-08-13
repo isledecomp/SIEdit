@@ -8,6 +8,11 @@
 
 namespace si {
 
+struct NullStream : private std::streambuf, public std::ostream {
+  NullStream() : std::ostream(this) {}
+  int overflow(int c) { return c; }
+};
+
 inline std::ostream &LogDebug()
 {
   return std::cout << "[DEBUG] ";

@@ -27,19 +27,25 @@ public:
     Version2_2 = 0x00020002
   };
 
+  enum ReadFlags
+  {
+    HeadersOnly = 1,
+    NoInfo = 2
+  };
+
   LIBWEAVER_EXPORT Interleaf();
 
   LIBWEAVER_EXPORT void Clear();
 
-  LIBWEAVER_EXPORT Error Read(const char *f);
+  LIBWEAVER_EXPORT Error Read(const char *f, int flags = 0);
   LIBWEAVER_EXPORT Error Write(const char *f) const;
 
 #ifdef _WIN32
-  LIBWEAVER_EXPORT Error Read(const wchar_t *f);
+  LIBWEAVER_EXPORT Error Read(const wchar_t *f, int flags = 0);
   LIBWEAVER_EXPORT Error Write(const wchar_t *f) const;
 #endif
 
-  Error Read(FileBase *is);
+  Error Read(FileBase *is, int flags = 0);
   Error Write(FileBase *os) const;
 
   Info *GetInformation() { return &m_Info; }
@@ -47,7 +53,7 @@ public:
 private:
   Error ReadChunk(Core *parent, FileBase *f, Info *info);
 
-  Object *ReadObject(FileBase *f, Object *o, std::stringstream &desc);
+  Object *ReadObject(FileBase *f, Object *o, std::ostream &desc);
   void WriteObject(FileBase *f, const Object *o) const;
 
   void InterleaveObjects(FileBase *f, const std::vector<Object*> &objects) const;
@@ -69,6 +75,8 @@ private:
 
   uint32_t m_JoiningProgress;
   uint32_t m_JoiningSize;
+
+  int m_readFlags;
 
 };
 
