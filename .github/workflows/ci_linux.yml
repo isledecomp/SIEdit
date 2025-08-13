@@ -59,8 +59,8 @@ jobs:
     - name: Build AppImage
       # Qt6_DIR is set by the install-qt-action
       run: |
-        export QMAKE=$Qt6_DIR/bin/qmake
-        export PATH=$Qt6_DIR/libexec:$PATH
+        echo "QMAKE=$Qt6_DIR/bin/qmake" >> $GITHUB_ENV
+        echo "PATH=$Qt6_DIR/libexec:$PATH" >> $GITHUB_ENV
         ./linuxdeploy-x86_64.AppImage \
         --appdir AppDir \
         -e ${{github.workspace}}/build/app/si-edit \
