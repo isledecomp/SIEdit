@@ -61,12 +61,12 @@ jobs:
       run: |
         export QMAKE=$Qt6_DIR/bin/qmake
         export PATH=$Qt6_DIR/libexec:$PATH
-        ./linuxdeploy-x86_64.AppImage
-        --appdir AppDir
-        -e ${{github.workspace}}/build/app/si-edit
-        -i ${{github.workspace}}/app/res/icon.svg
-        -d ${{github.workspace}}/app/res/AppImage.desktop
-        --plugin qt
+        ./linuxdeploy-x86_64.AppImage \
+        --appdir AppDir \
+        -e ${{github.workspace}}/build/app/si-edit \
+        -i ${{github.workspace}}/app/res/icon.svg \
+        -d ${{github.workspace}}/app/res/AppImage.desktop \
+        --plugin qt \
         --output appimage
 
     - name: 'Upload Artifact: libweaver'
