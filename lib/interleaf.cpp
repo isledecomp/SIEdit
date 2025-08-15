@@ -293,8 +293,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
 
   // Only read through objects in offset table, skip everything else
   if (m_readFlags & ObjectsOnly) {
-    if (static_cast<RIFF::Type>(id) == RIFF::MxOf ||
-  	  (static_cast<RIFF::Type>(id) == RIFF::MxOb && this == parent->GetParent())) {
+    if (static_cast<RIFF::Type>(id) == RIFF::MxOf || (static_cast<RIFF::Type>(id) == RIFF::MxOb && this == parent->GetParent())) {
       for (std::map<uint32_t, Object*>::iterator it = m_ObjectOffsetTable.begin(); it != m_ObjectOffsetTable.end(); it++){
         if (it->second->type() == MxOb::Null) {
           f->seek(it->first, FileBase::SeekStart);
