@@ -23,8 +23,8 @@ void Interleaf::Clear()
   m_BufferSize = 0;
   m_JoiningProgress = 0;
   m_JoiningSize = 0;
+  m_ObjectOffsetTable.clear();
   m_ObjectIDTable.clear();
-  m_ObjectList.clear();
   DeleteChildren();
 }
 
@@ -117,13 +117,14 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     desc << "Count: " << offset_count;
 
     uint32_t real_count = (size - sizeof(uint32_t)) / sizeof(uint32_t);
-    m_ObjectList.resize(real_count);
     for (uint32_t i = 0; i < real_count; i++) {
       Object *o = new Object();
       parent->AppendChild(o);
 
       uint32_t choffset = f->ReadU32();
-      m_ObjectList[i] = choffset;
+      if (choffset) {
+        m_ObjectOffsetTable[choffset] = o;
+      }
       desc << std::endl << i << ": 0x" << std::hex << choffset;
     }
     break;
@@ -174,16 +175,13 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     break;
   case RIFF::MxOb:
   {
-    Object *o = NULL;
+    std::map<uint32_t, Object*>::iterator it = m_ObjectOffsetTable.find(offset-kMinimumChunkSize);
+    Object* o;
 
-    for (size_t i=0; i<m_ObjectList.size(); i++) {
-      if (m_ObjectList[i] == offset-kMinimumChunkSize) {
-        o = static_cast<Object*>(GetChildAt(i));
-        break;
-      }
+    if (it != m_ObjectOffsetTable.end()) {
+      o = it->second;
     }
-
-    if (!o) {
+    else {
       o = new Object();
       parent->AppendChild(o);
     }
@@ -213,7 +211,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     uint32_t data_sz = f->ReadU32();
     desc << "Size: " << data_sz << std::endl;
 
-    if (m_readFlags & HeadersOnly) {
+    if (m_readFlags & NoData) {
       f->seek(size - MxCh::HEADER_SIZE, FileBase::SeekCurrent);
       break;
     }
@@ -292,6 +290,21 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
   if (size%2 == 1) {
     f->seek(1, File::SeekCurrent);
   }
+
+  // Only read through objects in offset table, skip everything else
+	if (m_readFlags & ObjectsOnly) {
+		if (static_cast<RIFF::Type>(id) == RIFF::MxOf ||
+			(static_cast<RIFF::Type>(id) == RIFF::MxOb && this == parent->GetParent())) {
+      for (std::map<uint32_t, Object*>::iterator it = m_ObjectOffsetTable.begin(); it != m_ObjectOffsetTable.end(); it++){
+        if (it->second->type() == MxOb::Null) {
+					f->seek(it->first, FileBase::SeekStart);
+					return ERROR_SUCCESS;
+        }
+      }
+
+			f->seek(0, FileBase::SeekEnd);
+		}
+	}
 
   return ERROR_SUCCESS;
 }

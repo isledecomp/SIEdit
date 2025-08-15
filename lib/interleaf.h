@@ -29,8 +29,9 @@ public:
 
   enum ReadFlags
   {
-    HeadersOnly = 1,
-    NoInfo = 2
+    NoData = 1,
+    NoInfo = 2,
+    ObjectsOnly = 4
   };
 
   LIBWEAVER_EXPORT Interleaf();
@@ -70,7 +71,7 @@ private:
   uint32_t m_BufferSize;
   uint32_t m_BufferCount;
 
-  std::vector<uint32_t> m_ObjectList;
+  std::map<uint32_t, Object*> m_ObjectOffsetTable;
   std::map<uint32_t, Object*> m_ObjectIDTable;
 
   uint32_t m_JoiningProgress;
