@@ -303,7 +303,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
 
       f->seek(0, FileBase::SeekEnd);
     }
-	}
+  }
 
   return ERROR_SUCCESS;
 }
