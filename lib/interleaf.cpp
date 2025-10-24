@@ -211,7 +211,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     uint32_t data_sz = f->ReadU32();
     desc << "Size: " << data_sz << std::endl;
 
-    if (m_readFlags & NoData) {
+    if (!(m_readFlags & IncludeData)) {
       f->seek(size - MxCh::HEADER_SIZE, FileBase::SeekCurrent);
       break;
     }
@@ -292,7 +292,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
   }
 
   // Only read through objects in offset table, skip everything else
-  if (m_readFlags & ObjectsOnly) {
+  if (!(m_readFlags & IncludeObjects)) {
     if (static_cast<RIFF::Type>(id) == RIFF::MxOf || (static_cast<RIFF::Type>(id) == RIFF::MxOb && this == parent->GetParent())) {
       for (std::map<uint32_t, Object*>::iterator it = m_ObjectOffsetTable.begin(); it != m_ObjectOffsetTable.end(); it++){
         if (it->second->type() == MxOb::Null) {
@@ -374,7 +374,7 @@ Interleaf::Error Interleaf::Read(FileBase *f, int flags)
 {
   Clear();
   m_readFlags = flags;
-  return ReadChunk(this, f, m_readFlags & NoInfo ? NULL : &m_Info);
+  return ReadChunk(this, f, m_readFlags & IncludeInfo ?  &m_Info : NULL);
 }
 
 void RecursivelyAddObjectToList(std::vector<Object*> *list, Object *o)
