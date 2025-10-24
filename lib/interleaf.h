@@ -43,7 +43,7 @@ public:
   LIBWEAVER_EXPORT Error Write(const char *f) const;
 
 #ifdef _WIN32
-  LIBWEAVER_EXPORT Error Read(const wchar_t *f, int flags = IncludeData | IncludeInfo | IncludeObjects);
+  LIBWEAVER_EXPORT Error Read(const wchar_t *f, int flags = IncludeData | IncludeInfo);
   LIBWEAVER_EXPORT Error Write(const wchar_t *f) const;
 #endif
 
