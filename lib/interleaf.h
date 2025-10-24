@@ -32,14 +32,14 @@ public:
   {
     IncludeData = 1,
     IncludeInfo = 2,
-    IncludeObjects = 4
+    ObjectsOnly = 4
   };
 
   LIBWEAVER_EXPORT Interleaf();
 
   LIBWEAVER_EXPORT void Clear();
 
-  LIBWEAVER_EXPORT Error Read(const char *f, int flags = IncludeData | IncludeInfo | IncludeObjects);
+  LIBWEAVER_EXPORT Error Read(const char *f, int flags = IncludeData | IncludeInfo);
   LIBWEAVER_EXPORT Error Write(const char *f) const;
 
 #ifdef _WIN32
@@ -47,7 +47,7 @@ public:
   LIBWEAVER_EXPORT Error Write(const wchar_t *f) const;
 #endif
 
-  Error Read(FileBase *is, int flags = IncludeData | IncludeInfo | IncludeObjects);
+  Error Read(FileBase *is, int flags = IncludeData | IncludeInfo);
   Error Write(FileBase *os) const;
 
   Info *GetInformation() { return &m_Info; }
