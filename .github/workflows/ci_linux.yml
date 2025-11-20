@@ -58,15 +58,15 @@ jobs:
 
     - name: Build AppImage
       # Qt6_DIR is set by the install-qt-action
-      run: >
-        QMAKE=$Qt6_DIR/bin/qmake
-        PATH=$Qt6_DIR/libexec:$PATH
-        ./linuxdeploy-x86_64.AppImage
-        --appdir AppDir
-        -e ${{github.workspace}}/build/app/si-edit
-        -i ${{github.workspace}}/app/res/icon.svg
-        -d ${{github.workspace}}/app/res/AppImage.desktop
-        --plugin qt
+      run: |
+        echo "QMAKE=$Qt6_DIR/bin/qmake" >> $GITHUB_ENV
+        echo "PATH=$Qt6_DIR/libexec:$PATH" >> $GITHUB_ENV
+        ./linuxdeploy-x86_64.AppImage \
+        --appdir AppDir \
+        -e ${{github.workspace}}/build/app/si-edit \
+        -i ${{github.workspace}}/app/res/icon.svg \
+        -d ${{github.workspace}}/app/res/AppImage.desktop \
+        --plugin qt \
         --output appimage
 
     - name: 'Upload Artifact: libweaver'
