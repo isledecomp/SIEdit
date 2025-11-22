@@ -2,6 +2,7 @@
 #define INTERLEAF_H
 
 #include <fstream>
+#include <map>
 
 #include "core.h"
 #include "file.h"
@@ -27,19 +28,26 @@ public:
     Version2_2 = 0x00020002
   };
 
+  enum ReadFlags
+  {
+    IncludeData = 1,
+    IncludeInfo = 2,
+    ObjectsOnly = 4
+  };
+
   LIBWEAVER_EXPORT Interleaf();
 
   LIBWEAVER_EXPORT void Clear();
 
-  LIBWEAVER_EXPORT Error Read(const char *f);
+  LIBWEAVER_EXPORT Error Read(const char *f, int flags = IncludeData | IncludeInfo);
   LIBWEAVER_EXPORT Error Write(const char *f) const;
 
 #ifdef _WIN32
-  LIBWEAVER_EXPORT Error Read(const wchar_t *f);
+  LIBWEAVER_EXPORT Error Read(const wchar_t *f, int flags = IncludeData | IncludeInfo);
   LIBWEAVER_EXPORT Error Write(const wchar_t *f) const;
 #endif
 
-  Error Read(FileBase *is);
+  Error Read(FileBase *is, int flags = IncludeData | IncludeInfo);
   Error Write(FileBase *os) const;
 
   Info *GetInformation() { return &m_Info; }
@@ -47,7 +55,7 @@ public:
 private:
   Error ReadChunk(Core *parent, FileBase *f, Info *info);
 
-  Object *ReadObject(FileBase *f, Object *o, std::stringstream &desc);
+  Object *ReadObject(FileBase *f, Object *o, std::ostream &desc);
   void WriteObject(FileBase *f, const Object *o) const;
 
   void InterleaveObjects(FileBase *f, const std::vector<Object*> &objects) const;
@@ -64,11 +72,13 @@ private:
   uint32_t m_BufferSize;
   uint32_t m_BufferCount;
 
-  std::vector<uint32_t> m_ObjectList;
+  std::map<uint32_t, Object*> m_ObjectOffsetTable;
   std::map<uint32_t, Object*> m_ObjectIDTable;
 
   uint32_t m_JoiningProgress;
   uint32_t m_JoiningSize;
+
+  int m_readFlags;
 
 };
 
