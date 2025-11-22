@@ -21,12 +21,14 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
     - name: Install Developer Command Prompt for Microsoft Visual C++
       uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: amd64
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
