@@ -6,6 +6,7 @@
 #include <fstream>
 #define FSTR(x) static_cast<std::fstream*>(x)
 #endif
+#include <algorithm>
 
 namespace si {
 
