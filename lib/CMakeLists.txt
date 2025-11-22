@@ -31,7 +31,6 @@ target_compile_definitions(libweaver PRIVATE LIBWEAVER_LIBRARY)
 if (NOT MSVC)
   target_compile_options(libweaver PRIVATE -Werror -Wall -Wextra -Wno-unused-parameter)
 endif()
-target_compile_definitions(libweaver PRIVATE $<$<BOOL:${WIN32}>:NOMINMAX>)
 set_target_properties(libweaver PROPERTIES
   CXX_STANDARD 98
   CXX_STANDARD_REQUIRED ON
