@@ -39,6 +39,7 @@ set(PROJECT_SOURCES
   vector3edit.h
 
   res/res.rc
+  res/icons.qrc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
