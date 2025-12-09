@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 
+#include <QApplication>
 #include <QFileDialog>
 #include <QLineEdit>
 #include <QMenuBar>
@@ -104,7 +105,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   splitter->setSizes({99999, 99999});
 
-  setWindowTitle(tr("SI Editor"));
+  setWindowTitle(QApplication::applicationName());
 
   SetPanel(panel_blank_, nullptr);
 }
@@ -178,6 +179,12 @@ void MainWindow::SetPanel(Panel *panel, si::Object *chunk)
   }
 }
 
+void MainWindow::UpdateWindowTitle(QString filename)
+{
+  TrimOffDirectory(filename);
+  setWindowTitle(QStringLiteral("%1 - %2[*]").arg(QApplication::applicationName(), filename));
+}
+
 void MainWindow::ExtractObject(si::Object *obj)
 {
   QString filename = QString::fromStdString(obj->filename());
@@ -185,11 +192,7 @@ void MainWindow::ExtractObject(si::Object *obj)
     filename = QString::fromStdString(obj->name());
     filename.append(QStringLiteral(".bin"));
   } else {
-    // Strip off directory
-    int index = filename.lastIndexOf('\\');
-    if (index != -1) {
-      filename = filename.mid(index+1);
-    }
+    TrimOffDirectory(filename);
   }
 
   QString s = QFileDialog::getSaveFileName(this, tr("Export Object"), filename);
@@ -218,6 +221,8 @@ void MainWindow::ReplaceObject(si::Object *obj)
 #endif
         )) {
       static_cast<Panel*>(config_stack_->currentWidget())->ResetData();
+      setWindowModified(true);
+
     } else {
       QMessageBox::critical(this, QString(), tr("Failed to open to file \"%1\".").arg(s));
     }
@@ -280,11 +285,26 @@ bool MainWindow::ExtractAllRecursiveInternal(const QDir &dir, const si::Core *ob
   return true;
 }
 
+void MainWindow::TrimOffDirectory(QString& s)
+{
+  int bSlashIndex = s.lastIndexOf('\\');
+  int fSlashIndex = s.lastIndexOf('/');
+  int lastIndex = (bSlashIndex > fSlashIndex) ? bSlashIndex : fSlashIndex;
+
+  if (lastIndex != -1) {
+    s = s.mid(lastIndex + 1);
+  }
+}
+
 void MainWindow::NewFile()
 {
+  tree_->clearSelection();
+  SetPanel(panel_blank_, nullptr);
   model_.SetCore(nullptr);
   interleaf_.Clear();
   model_.SetCore(&interleaf_);
+
+  UpdateWindowTitle(tr("UNTITLED.SI"));
 }
 
 void MainWindow::OpenFile()
@@ -292,6 +312,7 @@ void MainWindow::OpenFile()
   QString s = GetOpenFileName();
   if (!s.isEmpty()) {
     OpenFilename(s);
+    UpdateWindowTitle(s);
   }
 }
 
@@ -309,6 +330,7 @@ bool MainWindow::SaveFile()
     );
 
     if (r == Interleaf::ERROR_SUCCESS) {
+      UpdateWindowTitle(current_filename_);
       return true;
     } else {
       QMessageBox::critical(this, QString(), tr("Failed to write SI file: %1").arg(r));

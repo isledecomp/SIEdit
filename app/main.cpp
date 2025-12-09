@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
   qInstallMessageHandler(DebugHandler);
 
   QApplication a(argc, argv);
+  a.setApplicationName(QCoreApplication::translate("main", "SI Editor"));
 
   MainWindow w;
 
