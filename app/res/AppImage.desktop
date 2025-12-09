@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=SI Edit
+Comment=Tool for working with SI files
+Exec=si-edit
+Terminal=false
+Type=Application
+Icon=icon
+Categories=Development;Graphics;AudioVideo;
+

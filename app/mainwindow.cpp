@@ -106,6 +106,8 @@ MainWindow::MainWindow(QWidget *parent) :
   splitter->setSizes({99999, 99999});
 
   setWindowTitle(QApplication::applicationName());
+
+  SetPanel(panel_blank_, nullptr);
 }
 
 void MainWindow::OpenFilename(const QString &s)

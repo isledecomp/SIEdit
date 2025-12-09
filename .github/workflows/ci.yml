@@ -17,7 +17,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      FFMPEG_DIR: ffmpeg-n5.1-latest-win64-gpl-shared-5.1
+      FFMPEG_DIR: ffmpeg-n5.1.6-16-g6e63e49496-win64-gpl-shared-5.1
 
     steps:
     - name: Checkout
@@ -29,15 +29,16 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
 
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v4
       with:
-        version: '6.6'
+        version: '6.9'
+        arch: 'win64_msvc2022_64'
         modules: 'qtmultimedia'
 
     - name: Install FFmpeg
       shell: bash
       run: |
-        curl -fLOSs https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/$FFMPEG_DIR.zip
+        curl -fLOSs https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-01-31-12-58/$FFMPEG_DIR.zip
         7z x $FFMPEG_DIR.zip
 
     - name: Build

@@ -1,12 +1,12 @@
 #include "file.h"
 
 #ifdef _WIN32
-#define NOMINMAX
-#include <Windows.h>
+#include <windows.h>
 #else
 #include <fstream>
 #define FSTR(x) static_cast<std::fstream*>(x)
 #endif
+#include <algorithm>
 
 namespace si {
 

@@ -1,3 +1,5 @@
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 find_package(Qt6)
 
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Multimedia)
