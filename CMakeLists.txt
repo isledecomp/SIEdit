@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 project(libweaver VERSION 1.0 LANGUAGES CXX)
 
+option(LIBWEAVER_BUILD_APP "Enable building Qt app" ON)
 option(LIBWEAVER_INSTALL "Enable libweaver install targets" "${PROJECT_IS_TOP_LEVEL}")
 
 include(CMakePackageConfigHelpers)
@@ -9,7 +10,9 @@ include(GNUInstallDirs)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 add_subdirectory(lib)
-add_subdirectory(app)
+if(LIBWEAVER_BUILD_APP)
+  add_subdirectory(app)
+endif()
 
 if(LIBWEAVER_INSTALL)
   export(TARGETS libweaver NAMESPACE libweaver:: FILE "libweaver-targets.cmake")
