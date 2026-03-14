@@ -50,6 +50,8 @@ public:
   Error Read(FileBase *is, int flags = IncludeData | IncludeInfo);
   Error Write(FileBase *os) const;
 
+  LIBWEAVER_EXPORT Error ReadObjectData(FileBase *f, uint32_t objectId);
+
   Info *GetInformation() { return &m_Info; }
 
 private:
