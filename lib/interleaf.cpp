@@ -25,6 +25,7 @@ void Interleaf::Clear()
   m_JoiningSize = 0;
   m_ObjectOffsetTable.clear();
   m_ObjectIDTable.clear();
+  m_SlotOffsets.clear();
   DeleteChildren();
 }
 
@@ -125,6 +126,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
       if (choffset) {
         m_ObjectOffsetTable[choffset] = o;
       }
+      m_SlotOffsets.push_back(choffset);
       desc << std::endl << i << ": 0x" << std::hex << choffset;
     }
     break;
@@ -305,6 +307,13 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
     }
   }
 
+  // Stop after reading just the header (MxHd + MxOf)
+  if (m_readFlags & HeaderOnly) {
+    if (static_cast<RIFF::Type>(id) == RIFF::MxOf) {
+      f->seek(0, FileBase::SeekEnd);
+    }
+  }
+
   return ERROR_SUCCESS;
 }
 
@@ -370,96 +379,18 @@ Object *Interleaf::ReadObject(FileBase *f, Object *o, std::ostream &desc)
   return o;
 }
 
-Interleaf::Error Interleaf::ReadObjectData(FileBase *f, uint32_t objectId)
+Interleaf::Error Interleaf::ReadObject(FileBase *f, uint32_t slot)
 {
-  // Walk up to top-level parent (the one with an MxSt)
-  std::map<uint32_t, Object*>::iterator objIt = m_ObjectIDTable.find(objectId);
-  if (objIt == m_ObjectIDTable.end()) {
+  if (slot >= m_SlotOffsets.size() || m_SlotOffsets[slot] == 0) {
     return ERROR_INVALID_INPUT;
   }
 
-  Core *top = objIt->second;
-  while (top->GetParent() && top->GetParent() != this) {
-    top = top->GetParent();
-  }
+  m_JoiningProgress = 0;
+  m_JoiningSize = 0;
+  m_readFlags = IncludeData;
 
-  // Find MxSt file offset
-  uint32_t mxstOffset = 0;
-  for (std::map<uint32_t, Object*>::const_iterator it = m_ObjectOffsetTable.begin(); it != m_ObjectOffsetTable.end(); it++) {
-    if (it->second == top) {
-      mxstOffset = it->first;
-      break;
-    }
-  }
-  if (!mxstOffset) {
-    return ERROR_INVALID_INPUT;
-  }
-
-  // Seek to MxSt, skip MxOb (already parsed)
-  f->seek(mxstOffset, FileBase::SeekStart);
-  f->ReadU32(); // MxSt
-  uint32_t stSize = f->ReadU32();
-  uint32_t stEnd = uint32_t(f->pos()) + stSize;
-
-  f->ReadU32(); // MxOb
-  uint32_t obSize = f->ReadU32();
-  f->seek(obSize + (obSize%2), FileBase::SeekCurrent);
-
-  // Read data chunks
-  while (!f->atEnd() && (f->pos() + kMinimumChunkSize) < stEnd) {
-    if (m_BufferSize > 0) {
-      uint32_t oib = f->pos()%m_BufferSize;
-      if (oib + kMinimumChunkSize > m_BufferSize) {
-        f->seek(m_BufferSize-oib, FileBase::SeekCurrent);
-      }
-    }
-
-    uint32_t pos = f->pos();
-    uint32_t id = f->ReadU32();
-    uint32_t size = f->ReadU32();
-
-    if (static_cast<RIFF::Type>(id) == RIFF::MxCh) {
-      uint16_t flags = f->ReadU16();
-      uint32_t object = f->ReadU32();
-      uint32_t time = f->ReadU32();
-      uint32_t data_sz = f->ReadU32();
-      bytearray data = f->ReadBytes(size - MxCh::HEADER_SIZE);
-
-      if (!(flags & MxCh::FLAG_END)) {
-        std::map<uint32_t, Object*>::iterator it = m_ObjectIDTable.find(object);
-        if (it != m_ObjectIDTable.end()) {
-          Object *o = it->second;
-
-          if (flags & MxCh::FLAG_SPLIT && m_JoiningSize > 0) {
-            o->data_.back().append(data);
-
-            m_JoiningProgress += data.size();
-            if (m_JoiningProgress == m_JoiningSize) {
-              m_JoiningProgress = 0;
-              m_JoiningSize = 0;
-            }
-          } else {
-            o->data_.push_back(data);
-
-            if (o->data_.size() == 2) {
-              o->time_offset_ = time;
-            }
-
-            if (flags & MxCh::FLAG_SPLIT) {
-              m_JoiningProgress = data.size();
-              m_JoiningSize = data_sz;
-            }
-          }
-        }
-      }
-    } else if (static_cast<RIFF::Type>(id) == RIFF::LIST) {
-      f->ReadU32(); // list type
-    } else {
-      f->seek(pos + kMinimumChunkSize + size + (size%2), FileBase::SeekStart);
-    }
-  }
-
-  return ERROR_SUCCESS;
+  f->seek(m_SlotOffsets[slot], FileBase::SeekStart);
+  return ReadChunk(this, f, NULL);
 }
 
 Interleaf::Error Interleaf::Read(FileBase *f, int flags)

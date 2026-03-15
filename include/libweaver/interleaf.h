@@ -32,7 +32,8 @@ public:
   {
     IncludeData = 1,
     IncludeInfo = 2,
-    ObjectsOnly = 4
+    ObjectsOnly = 4,
+    HeaderOnly = 8
   };
 
   LIBWEAVER_EXPORT Interleaf();
@@ -50,7 +51,7 @@ public:
   Error Read(FileBase *is, int flags = IncludeData | IncludeInfo);
   Error Write(FileBase *os) const;
 
-  LIBWEAVER_EXPORT Error ReadObjectData(FileBase *f, uint32_t objectId);
+  LIBWEAVER_EXPORT Error ReadObject(FileBase *f, uint32_t slot);
 
   Info *GetInformation() { return &m_Info; }
 
@@ -76,6 +77,8 @@ private:
 
   std::map<uint32_t, Object*> m_ObjectOffsetTable;
   std::map<uint32_t, Object*> m_ObjectIDTable;
+
+  std::vector<uint32_t> m_SlotOffsets;
 
   uint32_t m_JoiningProgress;
   uint32_t m_JoiningSize;
