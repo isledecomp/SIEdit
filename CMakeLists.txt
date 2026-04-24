@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 3.21)
 
 project(libweaver VERSION 1.0 LANGUAGES CXX)
 
-option(LIBWEAVER_BUILD_APP "Enable building Qt app" ON)
+set(LIBWEAVER_BUILD_APP_DEFAULT ON)
+if(DOS OR EMSCRIPTEN)
+    set(LIBWEAVER_BUILD_APP_DEFAULT OFF)
+endif()
+
+option(LIBWEAVER_BUILD_APP "Enable building Qt app" ${LIBWEAVER_BUILD_APP_DEFAULT})
 option(LIBWEAVER_INSTALL "Enable libweaver install targets" "${PROJECT_IS_TOP_LEVEL}")
 
 include(CMakePackageConfigHelpers)
