@@ -19,7 +19,12 @@ set(LIBWEAVER_SOURCES
   sitypes.cpp
 )
 
-add_library(libweaver SHARED
+set(MAYBE_SHARED SHARED)
+if(DOS OR EMSCRIPTEN)
+    set(MAYBE_SHARED)
+endif()
+
+add_library(libweaver ${MAYBE_SHARED}
   ${LIBWEAVER_SOURCES}
   ${LIBWEAVER_HEADERS}
 )
