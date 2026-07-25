@@ -44,7 +44,7 @@ jobs:
     - name: Build
       shell: bash
       run: |
-        cmake . -G Ninja -DCMAKE_BUILD_TYPE=Release -DFFMPEG_ROOT=$FFMPEG_DIR
+        cmake . -G Ninja -DCMAKE_BUILD_TYPE=Release -DFFMPEG_ROOT=$(cygpath -m "$PWD")/$FFMPEG_DIR
         ninja
 
     - name: Deploy
