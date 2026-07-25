@@ -66,6 +66,11 @@ public:
 
   uint32_t time_offset_;
 
+  /// Raw MxDSSelectAction child list extension (selector string, count and
+  /// value strings), empty for regular child lists. Preserved verbatim
+  /// between Read and Write.
+  bytearray list_extension_;
+
   ChunkedData data_;
 
 private:

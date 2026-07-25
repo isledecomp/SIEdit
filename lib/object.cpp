@@ -298,6 +298,7 @@ size_t Object::CalculateMaximumDiskSize() const
 
   if (this->HasChildren()) {
     s += 16;
+    s += list_extension_.size();
 
     for (size_t i = 0; i < this->GetChildCount(); i++) {
       s += static_cast<Object*>(this->GetChildAt(i))->CalculateMaximumDiskSize();
