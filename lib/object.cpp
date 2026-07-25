@@ -282,7 +282,8 @@ size_t Object::CalculateMaximumDiskSize() const
 {
   size_t s = 0;
 
-  s += 108;
+  // 108 bytes of fixed fields + 2 for RIFF odd-size padding of this chunk
+  s += 110;
   s += presenter_.size() + 1;
   s += name_.size() + 1;
   s += extra_.size();
@@ -297,7 +298,8 @@ size_t Object::CalculateMaximumDiskSize() const
   }
 
   if (this->HasChildren()) {
-    s += 16;
+    // Child LIST header + 2 for RIFF odd-size padding
+    s += 18;
     s += list_extension_.size();
 
     for (size_t i = 0; i < this->GetChildCount(); i++) {

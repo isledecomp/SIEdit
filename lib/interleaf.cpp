@@ -15,12 +15,14 @@ static const uint32_t kMinimumChunkSize = 8;
 
 Interleaf::Interleaf()
 {
+  m_ObjectCount = 0;
 }
 
 void Interleaf::Clear()
 {
   m_Info.clear();
   m_BufferSize = 0;
+  m_ObjectCount = 0;
   m_JoiningProgress = 0;
   m_JoiningSize = 0;
   m_ObjectOffsetTable.clear();
@@ -114,6 +116,7 @@ Interleaf::Error Interleaf::ReadChunk(Core *parent, FileBase *f, Info *info)
   case RIFF::MxOf:
   {
     uint32_t offset_count = f->ReadU32();
+    m_ObjectCount = offset_count;
 
     desc << "Count: " << offset_count;
 
@@ -441,7 +444,7 @@ Interleaf::Error Interleaf::Write(FileBase *f) const
     // MxOf
     RIFF::Chk mxof = RIFF::BeginChunk(f, RIFF::MxOf);
 
-    f->WriteU32(GetChildCount());
+    f->WriteU32(m_ObjectCount ? m_ObjectCount : uint32_t(GetChildCount()));
 
     offset_table_pos = f->pos();
 
@@ -464,7 +467,9 @@ Interleaf::Error Interleaf::Write(FileBase *f) const
         continue;
       }
 
-      size_t maxSz = child->CalculateMaximumDiskSize() + kMinimumChunkSize;
+      // MxSt header + object tree + the MxDa LIST header that follows it,
+      // all of which must not straddle a buffer boundary
+      size_t maxSz = child->CalculateMaximumDiskSize() + kMinimumChunkSize * 2 + 4;
       WritePaddingIfNecessary(f, maxSz);
 
       uint32_t mxst_offset = f->pos();
@@ -815,7 +820,16 @@ void Interleaf::WritePaddingIfNecessary(FileBase *f, size_t projectedWrite) cons
   size_t this_buf = f->pos()/m_BufferSize;
   size_t end_buf = projected_end/m_BufferSize;
   if (this_buf != end_buf) {
-    WritePadding(f, (end_buf * m_BufferSize) - f->pos());
+    size_t pad = (end_buf * m_BufferSize) - f->pos();
+    if (pad < kMinimumChunkSize) {
+      // Too small for a pad_ chunk; fill with zeroes, which readers skip as
+      // part of the buffer alignment rule
+      bytearray b(pad);
+      b.fill(0);
+      f->WriteBytes(b);
+    } else {
+      WritePadding(f, pad);
+    }
   }
 }
 

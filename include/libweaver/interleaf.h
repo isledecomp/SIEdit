@@ -74,6 +74,7 @@ private:
   uint32_t m_Version;
   uint32_t m_BufferSize;
   uint32_t m_BufferCount;
+  uint32_t m_ObjectCount;
 
   std::map<uint32_t, Object*> m_ObjectOffsetTable;
   std::map<uint32_t, Object*> m_ObjectIDTable;
