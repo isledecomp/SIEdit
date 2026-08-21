@@ -6,6 +6,7 @@ set(LIBWEAVER_HEADERS
   ${PROJECT_SOURCE_DIR}/include/libweaver/info.h
   ${PROJECT_SOURCE_DIR}/include/libweaver/interleaf.h
   ${PROJECT_SOURCE_DIR}/include/libweaver/object.h
+  ${PROJECT_SOURCE_DIR}/include/libweaver/othertypes.h
   ${PROJECT_SOURCE_DIR}/include/libweaver/sitypes.h
   ${PROJECT_SOURCE_DIR}/include/libweaver/types.h
   ${PROJECT_SOURCE_DIR}/include/libweaver/util.h
